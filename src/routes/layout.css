@@ -1,7 +1,8 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn-svelte/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@fontsource/geist-sans";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -75,7 +76,7 @@
 }
 
 @theme inline {
-	--font-sans: 'Inter Variable', sans-serif;
+	--font-sans: "Inter Variable", sans-serif;
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -126,4 +127,13 @@
 	html {
 		@apply font-sans;
 	}
+}
+
+@theme {
+	--color-dark: #404141;
+	--color-light: #f9f9fa;
+}
+
+body {
+	margin: 0;
 }
