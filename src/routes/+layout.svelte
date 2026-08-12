@@ -10,7 +10,6 @@
 	<link rel="icon" href={favicon} />
 	<!-- TODO: These images still need to be populated, including the manifest and og-image! -->
 	<link rel="apple-touch-icon" sizes="180x180" href="/images/icons/apple-touch-icon.png" />
-	<link rel="manifest" href="/images/site.webmanifest" />
 	<meta name="description" content="Fast online mini chess game. Play minimalist 5x5 variant chess on Minichess." />
 	<meta property="og:title" content="Minichess" />
 	<meta property="og:type" content="website" />

@@ -14,10 +14,10 @@
 			<div class="grid grid-cols-5 overflow-hidden gap-1">
 				{#each game.board as row, rIndex}
 					{#each row as cell, cIndex}
-						{const col = String.fromCharCode(97 + cIndex)}
-						{const row = 5 - Math.floor(rIndex)}
-						{const square = `${col}${row}`}
-						{const highlighted = isHighlighted(rIndex, cIndex, game.validMoves)}
+						{const col = $derived(String.fromCharCode(97 + cIndex))}
+						{const rowLabel = $derived(5 - Math.floor(rIndex))}
+						{const square = $derived(`${col}${rowLabel}`)}
+						{const highlighted = $derived(isHighlighted(rIndex, cIndex, game.validMoves))}
 						<Square
 							isDark={(cIndex + rIndex) % 2 == 0}
 							{square}
