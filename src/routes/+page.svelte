@@ -11,7 +11,7 @@
 			{/each}
 		</div>
 		<h1 class="text-7xl font-sans text-dark hover:cursor-default mb-20">
-			<span class="inline-block transition-transform ease-in-out hover:scale-50 origin-right delay-500">Mini</span>Chess
+			<span class="inline-block transition-transform ease-in-out hover:scale-50 origin-right delay-500">Mini</span>chess
 		</h1>
 		<Button size="lg" class="cursor-pointer bg-dark text-xl" onclick={() => (window.location.href = "/play")}
 			>Play</Button

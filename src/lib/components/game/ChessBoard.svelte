@@ -9,15 +9,15 @@
 </script>
 
 <div class="flex flex-col items-center justify-center gap-6 p-4 w-full flex-1">
-	<div class="bg-white p-8 rounded-2xl flex flex-col relative shadow-md">
+	<div class="bg-white p-8 rounded-2xl flex flex-col relative">
 		<div class="flex flex-row relative">
-			<div class="grid grid-cols-5 gap-0.5">
+			<div class="grid grid-cols-5 overflow-hidden gap-1">
 				{#each game.board as row, rIndex}
 					{#each row as cell, cIndex}
-						{@const col = String.fromCharCode(97 + cIndex)}
-						{@const row = 5 - Math.floor(rIndex)}
-						{@const square = `${col}${row}`}
-						{@const highlighted = isHighlighted(rIndex, cIndex, game.validMoves)}
+						{const col = String.fromCharCode(97 + cIndex)}
+						{const row = 5 - Math.floor(rIndex)}
+						{const square = `${col}${row}`}
+						{const highlighted = isHighlighted(rIndex, cIndex, game.validMoves)}
 						<Square
 							isDark={(cIndex + rIndex) % 2 == 0}
 							{square}

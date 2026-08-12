@@ -20,15 +20,15 @@
 		children?: Snippet;
 	} = $props();
 
-	const darkColour = $state("#d6d9db");
-	const lightColour = $state("#f9f9fa");
-	const darkPieceColour = $state("#404141");
+	const darkColour = "#d6d9db";
+	const lightColour = "#f9f9fa";
+	const darkPieceColour = "#404141";
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="group relative flex items-center justify-center rounded"
+	class="group relative flex items-center justify-center"
 	style="
         width: {cellSize}px; 
         height: {cellSize}px; 
@@ -37,9 +37,9 @@
 	{onclick}
 >
 	<!-- Non-interactable hover outline layer -->
-	<div
-		class="pointer-events-none absolute inset-0 z-50 rounded ring-1 ring-dark/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-	></div>
+	<!-- <div
+		class="pointer-events-none absolute inset-0 z-50 ring-1 ring-dark/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+	></div> -->
 
 	{#if isHighlighted}
 		<div class="absolute w-4 h-4 bg-black/20 rounded-full"></div>
