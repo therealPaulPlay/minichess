@@ -19,26 +19,17 @@
 		q: QueenIcon,
 		k: KingIcon,
 	};
-
-	const sizeMap: Record<PieceType, string> = {
-		p: "scale-65",
-		n: "scale-85",
-		b: "scale-100",
-		r: "scale-85",
-		q: "scale-100",
-		k: "scale-100",
-	};
 </script>
 
 <div
 	class={[
 		"flex justify-center items-center self-center w-full h-full",
-		color === "w" && "text-white",
+		color === "w" && "text-black/30",
 		color === "b" && "text-black",
 	]}
 >
 	{#if type}
 		{const Component = iconMap[type]}
-		<Component class="w-full h-full p-3 my-2 overflow-visible transition-transform {sizeMap[type]}" draggable="true" />
+		<Component class="w-full h-full p-3 my-2 overflow-visible transition-transform" draggable="true" />
 	{/if}
 </div>
