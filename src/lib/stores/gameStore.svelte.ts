@@ -1,5 +1,5 @@
 import { getLegalMoves } from "../engine/rules";
-import type { BoardGrid, Position, PieceColor } from "../engine/types";
+import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
 
 const initialBoard: BoardGrid = [
 	[
@@ -34,10 +34,36 @@ const initialBoard: BoardGrid = [
 ];
 
 function createGame() {
-	let board = $state<BoardGrid>(initialBoard);
+	let board = $state<BoardGrid>(structuredClone(initialBoard));
 	let turn = $state<PieceColor>("w");
 	let selectedPos = $state<Position | null>(null);
 	let validMoves = $state<Position[]>([]);
+
+	function clearSelection() {
+		selectedPos = null;
+		validMoves = [];
+	}
+
+	function move(from: Position, to: Position) {
+		const pieceToMove = board[from.row][from.col];
+		if (!pieceToMove) return;
+
+		// Apply pawn promotion
+		const isPromotion = pieceToMove.type === "p" && (to.row === 0 || to.row === 4);
+		const finalPiece = isPromotion ? { ...pieceToMove, type: "q" as const } : pieceToMove;
+
+		// Update board state
+		board[to.row][to.col] = finalPiece;
+		board[from.row][from.col] = null;
+
+		// Switch turn and clear active selections
+		turn = turn === "w" ? "b" : "w";
+		clearSelection();
+	}
+
+	function pieceAt(pos: Position): Piece | null {
+		return board[pos.row][pos.col];
+	}
 
 	return {
 		get board() {
@@ -53,48 +79,34 @@ function createGame() {
 			return validMoves;
 		},
 
+		move,
+
+		pieceAt,
+
 		handleSquareClick(pos: Position) {
 			const clickedPiece = board[pos.row][pos.col];
 
-			// Clicking own piece
 			if (clickedPiece && clickedPiece.color === turn) {
 				selectedPos = pos;
 				validMoves = getLegalMoves(board, pos);
 				return;
 			}
 
-			// Moving selected piece
 			if (selectedPos) {
 				const isValid = validMoves.some((m) => m.row === pos.row && m.col === pos.col);
-
 				if (isValid) {
-					const pieceToMove = board[selectedPos.row][selectedPos.col];
-
-					board[pos.row][pos.col] = pieceToMove;
-					board[selectedPos.row][selectedPos.col] = null;
-
-					// Pawn promotion
-					if (pieceToMove?.type === "p" && (pos.row === 0 || pos.row === 4)) {
-						pieceToMove.type = "q";
-					}
-
-					turn = turn === "w" ? "b" : "w";
-					selectedPos = null;
-					validMoves = [];
+					move(selectedPos, pos);
 					return;
 				}
 			}
 
-			// Deselect
-			selectedPos = null;
-			validMoves = [];
+			clearSelection();
 		},
 
 		reset() {
-			board = initialBoard;
+			board = structuredClone(initialBoard);
 			turn = "w";
-			selectedPos = null;
-			validMoves = [];
+			clearSelection();
 		},
 	};
 }

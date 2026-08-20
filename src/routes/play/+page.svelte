@@ -4,15 +4,15 @@
 	import Button from "$lib/components/ui/button/button.svelte";
 </script>
 
-<main class="flex relative min-h-screen w-full  p-8 text-slate-900">
+<main class="relative flex min-h-screen w-full p-8 text-slate-900">
 	<Button
 		size="lg"
 		variant="secondary"
-		class="absolute top-0 left-0 m-4 group cursor-pointer gap-1"
+		class="group absolute top-0 left-0 m-4 cursor-pointer gap-1"
 		onclick={() => (window.location.href = "/")}
-		><ChevronLeftIcon class="group-hover:-translate-x-0.5 transition-transform -mb-0.5 -ml-0.5" /> Leave</Button
+		><ChevronLeftIcon class="-mb-0.5 -ml-0.5 transition-transform group-hover:-translate-x-0.5" /> Leave</Button
 	>
-	<div class="flex justify-center items-center flex-1">
+	<div class="flex flex-1 items-center justify-center">
 		<ChessBoard />
 	</div>
 </main>

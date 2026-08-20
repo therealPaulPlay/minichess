@@ -9,7 +9,7 @@
 	import KnightIcon from "$lib/components/chess-pieces/KnightIcon.svelte";
 	import KingIcon from "$lib/components/chess-pieces/KingIcon.svelte";
 
-	let { type, color }: { type: PieceType; color: PieceColor } = $props();
+	let { type, color, ...props }: { type: PieceType; color: PieceColor } = $props();
 
 	const iconMap: Record<PieceType, Component<any>> = {
 		p: PawnIcon,
@@ -19,17 +19,18 @@
 		q: QueenIcon,
 		k: KingIcon,
 	};
+
+	const Icon = $derived(iconMap[type]);
 </script>
 
 <div
 	class={[
-		"flex justify-center items-center self-center w-full h-full",
-		color === "w" && "text-black/30",
-		color === "b" && "text-black",
+		"z-20 flex h-full w-full items-center justify-center self-center overflow-visible",
+		color === "w" ? "text-[#afafaf]" : "text-black",
 	]}
+	{...props}
 >
-	{#if type}
-		{const Component = iconMap[type]}
-		<Component class="w-full h-full p-3 my-2 overflow-visible transition-transform" draggable="true" />
+	{#if Icon}
+		<Icon class="my-2 h-full w-full overflow-visible p-3 transition-transform hover:cursor-grab" />
 	{/if}
 </div>
