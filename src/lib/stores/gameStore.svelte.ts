@@ -1,5 +1,8 @@
-import { getLegalMoves } from "../engine/rules";
+import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules";
 import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
+import { Tween } from "svelte/motion";
+
+const INITIAL_TIME_SECONDS = 300;
 
 const initialBoard: BoardGrid = [
 	[
@@ -39,12 +42,69 @@ function createGame() {
 	let selectedPos = $state<Position | null>(null);
 	let validMoves = $state<Position[]>([]);
 
+	// clock states
+	let whiteTime = $state<number>(INITIAL_TIME_SECONDS);
+	let blackTime = $state<number>(INITIAL_TIME_SECONDS);
+	let isClockRunning = $state<boolean>(false);
+
+	let lastTickTime: number | null = null;
+	let timerId: ReturnType<typeof setInterval> | null = null;
+
+	const isCheck = $derived(isInCheck(board, turn));
+	const isTimeout = $derived(whiteTime <= 0 || blackTime <= 0);
+	const isOver = $derived(isTimeout || isCheckmate(board, turn) || isStalemate(board, turn));
+	const winner = $derived.by<PieceColor | "draw" | null>(() => {
+		if (whiteTime <= 0) return "b";
+		if (blackTime <= 0) return "w";
+		if (isCheckmate(board, turn)) return turn === "w" ? "b" : "w";
+		if (isStalemate(board, turn)) return "draw";
+		return null;
+	});
+
+	function tick() {
+		if (isOver || !lastTickTime) return;
+
+		const now = performance.now();
+		const deltaSeconds = (now - lastTickTime) / 1000;
+		lastTickTime = now;
+
+		if (turn === "w") {
+			whiteTime = Math.max(0, whiteTime - deltaSeconds);
+		} else {
+			blackTime = Math.max(0, blackTime - deltaSeconds);
+		}
+
+		if (whiteTime === 0 || blackTime === 0) {
+			stopClock();
+		}
+	}
+
+	function startClock() {
+		if (isOver || timerId !== null) return;
+
+		lastTickTime = performance.now();
+
+		timerId = setInterval(tick, 100); // 100ms
+		isClockRunning = true;
+	}
+
+	function stopClock() {
+		if (timerId) {
+			clearInterval(timerId);
+			timerId = null;
+		}
+		lastTickTime = null;
+		isClockRunning = false;
+	}
+
 	function clearSelection() {
 		selectedPos = null;
 		validMoves = [];
 	}
 
 	function move(from: Position, to: Position) {
+		if (isOver) return;
+
 		const pieceToMove = board[from.row][from.col];
 		if (!pieceToMove) return;
 
@@ -59,6 +119,17 @@ function createGame() {
 		// Switch turn and clear active selections
 		turn = turn === "w" ? "b" : "w";
 		clearSelection();
+
+		// Clock
+		if (!isClockRunning) {
+			startClock();
+		} else {
+			lastTickTime = performance.now();
+		}
+
+		if (isCheckmate(board, turn) || isStalemate(board, turn)) {
+			stopClock();
+		}
 	}
 
 	function pieceAt(pos: Position): Piece | null {
@@ -77,6 +148,33 @@ function createGame() {
 		},
 		get validMoves() {
 			return validMoves;
+		},
+		get isCheck() {
+			return isCheck;
+		},
+		get isCheckmate() {
+			return isCheckmate(board, turn);
+		},
+		get isStalemate() {
+			return isStalemate(board, turn);
+		},
+		get isGameOver() {
+			return isOver;
+		},
+		get winner() {
+			return winner;
+		},
+		get whiteTime() {
+			return whiteTime;
+		},
+		get blackTime() {
+			return blackTime;
+		},
+		get isClockRunning() {
+			return isClockRunning;
+		},
+		get INITIAL_TIME_SECONDS() {
+			return INITIAL_TIME_SECONDS;
 		},
 
 		move,
@@ -104,6 +202,9 @@ function createGame() {
 		},
 
 		reset() {
+			stopClock();
+			whiteTime = INITIAL_TIME_SECONDS;
+			blackTime = INITIAL_TIME_SECONDS;
 			board = structuredClone(initialBoard);
 			turn = "w";
 			clearSelection();

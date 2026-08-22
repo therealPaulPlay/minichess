@@ -4,13 +4,21 @@
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
 	import type { Position } from "$lib/engine/types";
+	import TurnIndicator from "./TurnIndicator.svelte";
+	import Progress from "$lib/components/ui/progress/progress.svelte";
 
 	let board;
 
-	function isHighlighted(row: number, col: number, validMoves: Array<{ row: number; col: number }>) {
+	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
+	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
+
+	console.log(`${game.INITIAL_TIME_SECONDS}/${game.blackTime}`);
+
+	function isHighlighted(row: number, col: number, validMoves: Array<Position>) {
 		return validMoves.some((m) => m.row === row && m.col === col);
 	}
 
+	// most of this code is just for UI, drag-and-drop effect.
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
 		return (node) => {
 			function preventNativeDrag(e: DragEvent) {
@@ -132,6 +140,15 @@
 						</Square>
 					{/each}
 				{/each}
+			</div>
+			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
+				<TurnIndicator />
+			</div>
+			<div class="absolute -top-6 z-50 w-full opacity-50">
+				<Progress value={blackTimeLeft} />
+			</div>
+			<div class="absolute -bottom-6 z-50 w-full opacity-50">
+				<Progress value={whiteTimeLeft} />
 			</div>
 		</div>
 	</div>

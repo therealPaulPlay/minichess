@@ -2,6 +2,7 @@
 	import { ChevronLeftIcon } from "@lucide/svelte";
 	import ChessBoard from "$lib/components/game/ChessBoard.svelte";
 	import Button from "$lib/components/ui/button/button.svelte";
+	import TurnIndicator from "$lib/components/game/TurnIndicator.svelte";
 </script>
 
 <main class="relative flex min-h-screen w-full p-8 text-slate-900">

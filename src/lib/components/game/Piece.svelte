@@ -8,8 +8,18 @@
 	import BishopIcon from "$lib/components/chess-pieces/BishopIcon.svelte";
 	import KnightIcon from "$lib/components/chess-pieces/KnightIcon.svelte";
 	import KingIcon from "$lib/components/chess-pieces/KingIcon.svelte";
+	import type { HTMLAttributes } from "svelte/elements";
 
-	let { type, color, ...props }: { type: PieceType; color: PieceColor } = $props();
+	let {
+		type,
+		color,
+		class: className = "",
+		...props
+	}: {
+		type: PieceType;
+		color: PieceColor;
+		class?: string;
+	} & HTMLAttributes<HTMLDivElement> = $props();
 
 	const iconMap: Record<PieceType, Component<any>> = {
 		p: PawnIcon,
@@ -27,6 +37,7 @@
 	class={[
 		"z-20 flex h-full w-full items-center justify-center self-center overflow-visible",
 		color === "w" ? "text-[#afafaf]" : "text-black",
+		className,
 	]}
 	{...props}
 >

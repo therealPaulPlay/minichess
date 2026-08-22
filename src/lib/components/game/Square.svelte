@@ -63,6 +63,5 @@
 		{/if}
 	{/if}
 
-	<!-- 3. Piece Render (Unclipped) -->
 	{@render children?.()}
 </div>
