@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Square from "$lib/components/game/Square.svelte";
-	import { game } from "$lib/stores/gameStore.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
 	import type { Position } from "$lib/engine/types";
@@ -8,12 +7,10 @@
 	import Progress from "$lib/components/ui/progress/progress.svelte";
 
 	let board; // TODO: Unused
+	const game = {}; // TODO: Placeholder, infer from the synced storage (e.g. storage.turn for the turn etc.)
 
 	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
 	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
-
-	// TODO: Remove debug log
-	console.log(`${game.INITIAL_TIME_SECONDS}/${game.blackTime}`);
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 
@@ -66,7 +63,8 @@
 					const dropRow = parseInt(closestSquare.dataset.row!);
 					const dropCol = parseInt(closestSquare.dataset.col!);
 
-					game.handleSquareClick({ row: dropRow, col: dropCol } as Position);
+					// game.handleSquareClick({ row: dropRow, col: dropCol } as Position);
+					// TODO: Send PlaySocket request to execute move instead
 				}
 
 				node.style.zIndex = "";
@@ -77,6 +75,7 @@
 				if (e.button !== 0 && e.pointerType === "mouse") return;
 
 				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
+				// TODO: PieceAt could be a shared helper, not sure, needs its own solution
 				if (game.pieceAt({ row, col })?.color !== game.turn) return;
 
 				startX = e.clientX;
@@ -92,7 +91,8 @@
 
 				node.style.cursor = "grabbing";
 
-				game.handleSquareClick({ row, col } as Position);
+				// game.handleSquareClick({ row, col } as Position);
+				// TODO: send PlaySocket request to execute the move instead
 			}
 
 			node.addEventListener("pointerdown", onPointerDown);
