@@ -13,11 +13,13 @@
 	let {
 		type,
 		color,
+		draggable = false,
 		class: className = "",
 		...props
 	}: {
 		type: PieceType;
 		color: PieceColor;
+		draggable?: boolean;
 		class?: string;
 	} & HTMLAttributes<HTMLDivElement> = $props();
 
@@ -36,12 +38,17 @@
 <div
 	class={[
 		"z-20 flex h-full w-full items-center justify-center self-center overflow-visible",
-		color === "w" ? "text-[#afafaf]" : "text-black",
+		color === "w" ? "text-(--chess-piece-light)" : "text-black",
 		className,
 	]}
 	{...props}
 >
 	{#if Icon}
-		<Icon class="my-2 h-full w-full overflow-visible p-3 transition-transform hover:cursor-grab" />
+		<Icon
+			class={[
+				"my-2 h-full w-full overflow-visible p-3 transition-transform",
+				draggable && "hover:cursor-grab",
+			]}
+		/>
 	{/if}
 </div>

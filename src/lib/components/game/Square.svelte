@@ -10,7 +10,6 @@
 		cellSize = 60,
 		isDark,
 		isHighlighted,
-		isSelected,
 		piece,
 		onclick,
 		children,
@@ -27,10 +26,6 @@
 		children?: Snippet;
 	} = $props();
 
-	const darkColour = "#d6d9db";
-	const lightColour = "#f9f9fa";
-	const darkPieceColour = "#404141";
-
 	const showDot = true;
 </script>
 
@@ -46,7 +41,7 @@
 >
 	<div
 		class="squircle pointer-events-none absolute inset-0"
-		style="background-color: {isDark ? darkColour : lightColour};"
+		style="background-color: {isDark ? "var(--chess-field-dark)" : "var(--chess-field-light)"};"
 		class:bg-[#b8d7f2]!={isHighlighted && !isDark && !showDot}
 		class:bg-[#8fb7dc]!={isHighlighted && isDark && !showDot}
 	></div>

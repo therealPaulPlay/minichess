@@ -3,7 +3,7 @@
 	import KingIcon from "../chess-pieces/KingIcon.svelte";
 </script>
 
-<div class="relative flex h-14 w-8 justify-center rounded-full bg-[#d6d9db] p-1 inset-shadow-sm inset-shadow-black/30">
+<div class="relative flex h-14 w-8 justify-center rounded-full bg-(--chess-field-dark) p-1 inset-shadow-sm inset-shadow-black/15">
 	<div
 		class="bg-light absolute h-6 w-6 rounded-full shadow-sm inset-shadow-xs inset-shadow-white transition-transform"
 		class:translate-y-6={game.turn === "w"}
@@ -23,7 +23,7 @@
 		class:opacity-30={game.turn === "b"}
 		class:tilt-n-move-shaking={game.turn === "w" && game.isCheck}
 	>
-		<KingIcon class=" text-[#afafaf] " />
+		<KingIcon class="text-(--chess-piece-light) " />
 	</div>
 </div>
 

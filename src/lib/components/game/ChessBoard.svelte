@@ -7,29 +7,25 @@
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import Progress from "$lib/components/ui/progress/progress.svelte";
 
-	let board;
+	let board; // TODO: Unused
 
 	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
 	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
 
+	// TODO: Remove debug log
 	console.log(`${game.INITIAL_TIME_SECONDS}/${game.blackTime}`);
 
-	function isHighlighted(row: number, col: number, validMoves: Array<Position>) {
-		return validMoves.some((m) => m.row === row && m.col === col);
-	}
+	const MAX_SNAP_RADIUS = 80; // Radius in px
 
-	// most of this code is just for UI, drag-and-drop effect.
+	// Most of this code is for the drag-and-drop effect
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
 		return (node) => {
-			function preventNativeDrag(e: DragEvent) {
-				e.preventDefault();
-			}
-			node.addEventListener("dragstart", preventNativeDrag);
+			node.addEventListener("dragstart", (e) => e.preventDefault());
 
 			let startX = 0;
 			let startY = 0;
 
-			// move
+			// Move
 			function onPointerMove(e: PointerEvent) {
 				const dx = e.clientX - startX;
 				const dy = e.clientY - startY;
@@ -37,16 +33,14 @@
 				node.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
 			}
 
-			// let go
+			// Let go
 			function onPointerUp(e: PointerEvent) {
 				window.removeEventListener("pointermove", onPointerMove);
 				window.removeEventListener("pointerup", onPointerUp);
 
 				node.style.transform = "translate3d(0, 0, 0)";
 
-				if (node.hasPointerCapture(e.pointerId)) {
-					node.releasePointerCapture(e.pointerId);
-				}
+				if (node.hasPointerCapture(e.pointerId)) node.releasePointerCapture(e.pointerId);
 				node.style.cursor = "";
 
 				const squares = document.querySelectorAll<HTMLElement>("[data-square]");
@@ -68,8 +62,7 @@
 					}
 				}
 
-				const maxSnapRadius = 80; // in pixels
-				if (closestSquare && minDistanceSq <= maxSnapRadius ** 2) {
+				if (closestSquare && minDistanceSq <= MAX_SNAP_RADIUS ** 2) {
 					const dropRow = parseInt(closestSquare.dataset.row!);
 					const dropCol = parseInt(closestSquare.dataset.col!);
 
@@ -79,11 +72,11 @@
 				node.style.zIndex = "";
 			}
 
-			// click
+			// Click
 			function onPointerDown(e: PointerEvent) {
 				if (e.button !== 0 && e.pointerType === "mouse") return;
 
-				// can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
+				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
 				if (game.pieceAt({ row, col })?.color !== game.turn) return;
 
 				startX = e.clientX;
@@ -105,13 +98,17 @@
 			node.addEventListener("pointerdown", onPointerDown);
 
 			return () => {
-				// cleanup
+				// Cleanup
 				node.removeEventListener("pointerdown", onPointerDown);
 				window.removeEventListener("pointermove", onPointerMove);
 				window.removeEventListener("pointerup", onPointerUp);
-				node.removeEventListener("dragstart", preventNativeDrag);
+				node.removeEventListener("dragstart", (e) => e.preventDefault());
 			};
 		};
+	}
+
+	function isHighlighted(row: number, col: number, validMoves: Array<Position>) {
+		return validMoves.some((m) => m.row === row && m.col === col);
 	}
 </script>
 
@@ -135,7 +132,12 @@
 							onclick={() => game.handleSquareClick({ row: rIndex, col: cIndex })}
 						>
 							{#if cell?.type && cell.color}
-								<Piece type={cell.type} color={cell.color} {@attach draggable(rIndex, cIndex)} />
+								<Piece
+									type={cell.type}
+									color={cell.color}
+									draggable={cell.color === game.turn}
+									{@attach draggable(rIndex, cIndex)}
+								/>
 							{/if}
 						</Square>
 					{/each}

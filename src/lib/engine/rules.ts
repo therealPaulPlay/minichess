@@ -72,17 +72,14 @@ export function getLegalMoves(board: BoardGrid, from: Position): Position[] {
 	return pseudoMoves.filter((to) => !wouldCauseCheck(board, { from, to }, piece.color));
 }
 
-// CHECK ENGINE LOGIC
-
+// Check engine logic -------------------------------------------------------------------
 export function isSquareAttacked(board: BoardGrid, targetPos: Position, attackerColor: PieceColor): boolean {
 	for (let r = 0; r < 5; r++) {
 		for (let c = 0; c < 5; c++) {
 			const piece = board[r][c];
 			if (piece && piece.color === attackerColor) {
 				const moves = getPseudoLegalMoves(board, { row: r, col: c });
-				if (moves.some((m) => m.row === targetPos.row && m.col === targetPos.col)) {
-					return true;
-				}
+				if (moves.some((m) => m.row === targetPos.row && m.col === targetPos.col)) return true;
 			}
 		}
 	}
@@ -129,16 +126,14 @@ export function isStalemate(board: BoardGrid, color: PieceColor): boolean {
 	return !isInCheck(board, color) && !hasAnyLegalMoves(board, color);
 }
 
-// Piece movements
+// Piece movement ----------------------------------------------------------------------
 
 function getPawnMoves(board: BoardGrid, pos: Position, color: PieceColor): Position[] {
 	const targets: Position[] = [];
 	const dir = color === "w" ? -1 : 1;
 
 	const forward: Position = { row: pos.row + dir, col: pos.col };
-	if (isWithinBounds(forward) && board[forward.row][forward.col] === null) {
-		targets.push(forward);
-	}
+	if (isWithinBounds(forward) && board[forward.row][forward.col] === null) targets.push(forward);
 
 	const diagonals = [
 		{ row: pos.row + dir, col: pos.col - 1 },
@@ -148,9 +143,7 @@ function getPawnMoves(board: BoardGrid, pos: Position, color: PieceColor): Posit
 	for (const diag of diagonals) {
 		if (isWithinBounds(diag)) {
 			const targetPiece = board[diag.row][diag.col];
-			if (targetPiece && targetPiece.color !== color) {
-				targets.push(diag);
-			}
+			if (targetPiece && targetPiece.color !== color) targets.push(diag);
 		}
 	}
 
@@ -190,6 +183,7 @@ function getRayMoves(
 	directions.forEach(([rDir, cDir]) => {
 		let step = 0;
 		let current: Position = { col: pos.col, row: pos.row };
+
 		while (step < maxSteps) {
 			step++;
 
@@ -197,11 +191,9 @@ function getRayMoves(
 				row: current.row + rDir,
 				col: current.col + cDir,
 			};
-
 			if (!isWithinBounds(newPos)) break;
 
 			const targetCell = board[newPos.row][newPos.col];
-
 			if (targetCell?.color === color) break;
 
 			targets.push(newPos);

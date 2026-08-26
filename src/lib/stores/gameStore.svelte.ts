@@ -1,6 +1,5 @@
 import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules";
 import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
-import { Tween } from "svelte/motion";
 
 const INITIAL_TIME_SECONDS = 300;
 
@@ -42,7 +41,7 @@ function createGame() {
 	let selectedPos = $state<Position | null>(null);
 	let validMoves = $state<Position[]>([]);
 
-	// clock states
+	// Clock states
 	let whiteTime = $state<number>(INITIAL_TIME_SECONDS);
 	let blackTime = $state<number>(INITIAL_TIME_SECONDS);
 	let isClockRunning = $state<boolean>(false);
@@ -68,15 +67,10 @@ function createGame() {
 		const deltaSeconds = (now - lastTickTime) / 1000;
 		lastTickTime = now;
 
-		if (turn === "w") {
-			whiteTime = Math.max(0, whiteTime - deltaSeconds);
-		} else {
-			blackTime = Math.max(0, blackTime - deltaSeconds);
-		}
+		if (turn === "w") whiteTime = Math.max(0, whiteTime - deltaSeconds);
+		else blackTime = Math.max(0, blackTime - deltaSeconds);
 
-		if (whiteTime === 0 || blackTime === 0) {
-			stopClock();
-		}
+		if (whiteTime === 0 || blackTime === 0) stopClock();
 	}
 
 	function startClock() {
@@ -121,15 +115,10 @@ function createGame() {
 		clearSelection();
 
 		// Clock
-		if (!isClockRunning) {
-			startClock();
-		} else {
-			lastTickTime = performance.now();
-		}
+		if (!isClockRunning) startClock();
+		else lastTickTime = performance.now();
 
-		if (isCheckmate(board, turn) || isStalemate(board, turn)) {
-			stopClock();
-		}
+		if (isCheckmate(board, turn) || isStalemate(board, turn)) stopClock();
 	}
 
 	function pieceAt(pos: Position): Piece | null {
