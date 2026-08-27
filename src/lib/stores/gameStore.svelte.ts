@@ -1,7 +1,13 @@
 import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules";
 import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
+import { browser } from "$app/environment";
 
 const INITIAL_TIME_SECONDS = 300;
+
+let pieceMoveSound: HTMLAudioElement | null = null;
+if (browser) {
+	pieceMoveSound = new Audio("/sounds/piece-move.wav");
+}
 
 const initialBoard: BoardGrid = [
 	[
@@ -109,6 +115,10 @@ function createGame() {
 		// Update board state
 		board[to.row][to.col] = finalPiece;
 		board[from.row][from.col] = null;
+
+		// Sounds
+		pieceMoveSound?.play();
+		// TODO: Add an extra sound that would combine with the move sound for captures
 
 		// Switch turn and clear active selections
 		turn = turn === "w" ? "b" : "w";
