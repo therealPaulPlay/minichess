@@ -90,7 +90,7 @@ export function isInCheck(board: BoardGrid, color: PieceColor): boolean {
 	const kingPos = findKing(board, color);
 	if (!kingPos) return false;
 
-	const enemyColor: PieceColor = color === "w" ? "b" : "w";
+	const enemyColor: PieceColor = color === "white" ? "black" : "white";
 	return isSquareAttacked(board, kingPos, enemyColor);
 }
 
@@ -129,7 +129,7 @@ export function isStalemate(board: BoardGrid, color: PieceColor): boolean {
 // Piece movement ----------------------------------------------------------------------
 function getPawnMoves(board: BoardGrid, pos: Position, color: PieceColor): Position[] {
 	const targets: Position[] = [];
-	const dir = color === "w" ? -1 : 1;
+	const dir = color === "white" ? -1 : 1;
 
 	const forward: Position = { row: pos.row + dir, col: pos.col };
 	if (isWithinBounds(forward) && board[forward.row][forward.col] === null) targets.push(forward);

@@ -1,11 +1,13 @@
-import "dotenv/config";
 import PlaySocketServer from "playsocketjs/server";
 import { getClientIp } from "./clientIp.ts";
 import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
-import { ChessGame } from "./gameLogic.ts";
+import { ChessGame, initialBoard } from "./gameLogic.ts";
+import { pieceAt } from "../engine/helpers.ts";
+
+const PORT = 4000;
 
 let server = new PlaySocketServer({
-	port: Number(process.env.SERVER_PORT),
+	port: Number(PORT),
 	verifyClient: (info, callback) => {
 		if (isWsUpgradeRateLimited(getClientIp(info.req))) return callback(false, 429, "Too Many Requests");
 		callback(true);
@@ -15,7 +17,15 @@ let server = new PlaySocketServer({
 const chessGameInstances = new Map(); // Room ID -> chess game instance
 
 server.onEvent("roomCreationRequested", () => {
-	// TODO validate room storage looks sound, board + turn are populated etc.
+	// Client-passed storage is ignored, we override with the same starter room storage
+	return {
+		turn: "white",
+		board: initialBoard,
+		blackTime: 0,
+		whiteTime: 0,
+		status: {}
+
+	}
 });
 
 server.onEvent("roomCreated", (roomId: string) => {
@@ -29,23 +39,27 @@ server.onEvent("roomDestroyed", (roomId: string) => {
 
 server.onEvent("requestReceived", ({ clientId, roomId, name, data }) => {
 	if (name === "move-piece") {
-		// TODO implement piece movement
-		// Then update a "turn" key in PlaySocket to reflect the turn
+		if (!roomId) return;
+		const roomStorage = server.getRoomStorage(roomId);
+		const chessGame = chessGameInstances.get(roomId);
+		const piece = pieceAt(roomStorage.board, data.currentPos);
+		// TODO: Validate piece.color matches that client's color, otherwise reject
+		const allowed = chessGame.move(data.currentPos, data.newPos);
+
+		// If the move was allowed, toggle who's turn it is
+		if (allowed === true) {
+			const turn = chessGame.changeTurn();
+			server.updateRoomStorage(roomId, "turn", "set", turn);
+			server.updateRoomStorage(roomId, "board", "set", chessGame.board);
+			server.updateRoomStorage(roomId, "status", "set", chessGame.status)
+		}
+		return allowed; // False if not allowed -> blocks the update and reverts
 	}
 });
 
 server.onEvent("storageUpdateRequested", () => {
 	// TODO only allow expliclty user-updatable keys & handle validation
 });
-
-// Helpers --------------------------------------------------------------------
-function updateRoomStorageWithGameState(roomId: string) {
-	if (!server.getRoomStorage(roomId)) return; // Room doesn't exist
-
-	const chessGame = chessGameInstances.get(roomId);
-
-	server.updateRoomStorage(roomId, "board", "set", chessGame)
-}
 
 // Clean exit -----------------------------------------------------------------
 function shutdown() {

@@ -20,7 +20,6 @@
 		cellSize?: number;
 		isDark: boolean;
 		isHighlighted?: boolean;
-		isSelected?: boolean;
 		piece?: Piece | null;
 		onclick?: any;
 		children?: Snippet;
@@ -49,7 +48,7 @@
 	{#if isHighlighted && showDot}
 		{#if piece}
 			<Sword
-				class="pointer-events-none absolute z-40 {piece.color == 'b'
+				class="pointer-events-none absolute z-40 {piece.color == 'black'
 					? 'text-white/60'
 					: 'text-black/20'} scale-75 rotate-45"
 			/>

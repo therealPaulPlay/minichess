@@ -1,43 +1,44 @@
-import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules";
-import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
+import { pieceAt } from "../engine/helpers.ts";
+import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
+import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types.ts";
 
 const INITIAL_TIME_SECONDS = 300;
 
-const initialBoard: BoardGrid = [
+export const initialBoard: BoardGrid = [
     [
-        { type: "r", color: "b" },
-        { type: "n", color: "b" },
-        { type: "b", color: "b" },
-        { type: "q", color: "b" },
-        { type: "k", color: "b" },
+        { type: "r", color: "black" },
+        { type: "n", color: "black" },
+        { type: "b", color: "black" },
+        { type: "q", color: "black" },
+        { type: "k", color: "black" },
     ],
     [
-        { type: "p", color: "b" },
-        { type: "p", color: "b" },
-        { type: "p", color: "b" },
-        { type: "p", color: "b" },
-        { type: "p", color: "b" },
+        { type: "p", color: "black" },
+        { type: "p", color: "black" },
+        { type: "p", color: "black" },
+        { type: "p", color: "black" },
+        { type: "p", color: "black" },
     ],
     [null, null, null, null, null],
     [
-        { type: "p", color: "w" },
-        { type: "p", color: "w" },
-        { type: "p", color: "w" },
-        { type: "p", color: "w" },
-        { type: "p", color: "w" },
+        { type: "p", color: "white" },
+        { type: "p", color: "white" },
+        { type: "p", color: "white" },
+        { type: "p", color: "white" },
+        { type: "p", color: "white" },
     ],
     [
-        { type: "r", color: "w" },
-        { type: "n", color: "w" },
-        { type: "b", color: "w" },
-        { type: "q", color: "w" },
-        { type: "k", color: "w" },
+        { type: "r", color: "white" },
+        { type: "n", color: "white" },
+        { type: "b", color: "white" },
+        { type: "q", color: "white" },
+        { type: "k", color: "white" },
     ],
 ];
 
 export class ChessGame {
     board: BoardGrid = structuredClone(initialBoard);
-    turn: PieceColor = "w";
+    turn: PieceColor = "white";
 
     // Clock ----------------------------------------------
     // TODO this needs rewriting for multiplayer
@@ -56,7 +57,7 @@ export class ChessGame {
         const deltaSeconds = (now - this.#lastTickTime) / 1000;
         this.#lastTickTime = now;
 
-        if (this.turn === "w") this.whiteTime = Math.max(0, this.whiteTime - deltaSeconds);
+        if (this.turn === "white") this.whiteTime = Math.max(0, this.whiteTime - deltaSeconds);
         else this.blackTime = Math.max(0, this.blackTime - deltaSeconds);
 
         if (this.whiteTime === 0 || this.blackTime === 0) this.#stopClock();
@@ -82,15 +83,15 @@ export class ChessGame {
 
     // Pieces ---------------------------------------------
     move(from: Position, to: Position) {
-        if (this.isGameOver) return;
+        if (this.isGameOver) return "Game is over";
 
-        const pieceToMove = this.board[from.row][from.col];
-        if (!pieceToMove) return;
+        const pieceToMove = pieceAt(this.board, { row: from.row, col: from.col });
+        if (!pieceToMove) return "Piece not found";
 
         // Validate
-        const validMoves = getLegalMoves(this.board, to);
+        const validMoves = getLegalMoves(this.board, from);
         const isValid = validMoves.some((m) => m.row === to.row && m.col === to.col);
-        if (!isValid) return false; // Invalid move, aborted
+        if (!isValid) return "Illegal move";
 
         // Apply pawn promotion
         const isPromotion = pieceToMove.type === "p" && (to.row === 0 || to.row === 4);
@@ -100,9 +101,6 @@ export class ChessGame {
         this.board[to.row][to.col] = finalPiece;
         this.board[from.row][from.col] = null;
 
-        // Switch turn and clear active selections
-        this.turn = this.turn === "w" ? "b" : "w";
-
         // Clock
         if (!this.isClockRunning) this.#startClock();
         else this.#lastTickTime = performance.now();
@@ -111,36 +109,30 @@ export class ChessGame {
         return true; // Valid move, executed
     }
 
-    pieceAt(pos: Position): Piece | null {
-        return this.board[pos.row][pos.col];
+    changeTurn() {
+        this.turn = this.turn === "white" ? "black" : "white";
+        return this.turn;
     }
 
-    // Getters --------------------------------------------
-    get #isTimeout() {
-        return this.whiteTime <= 0 || this.blackTime <= 0;
-    }
-
-    get isCheck() {
-        return isInCheck(this.board, this.turn);
-    }
-
-    get isCheckmate() {
-        return isCheckmate(this.board, this.turn);
-    }
-
-    get isStalemate() {
-        return isStalemate(this.board, this.turn);
-    }
-
-    get isGameOver() {
-        return this.#isTimeout || this.isCheckmate || this.isStalemate;
-    }
-
-    get winner(): PieceColor | "draw" | null {
-        if (this.whiteTime <= 0) return "b";
-        if (this.blackTime <= 0) return "w";
-        if (this.isCheckmate) return this.turn === "w" ? "b" : "w";
-        if (this.isStalemate) return "draw";
+    // Status ---------------------------------------------
+    #determineWinner(): PieceColor | "draw" | null {
+        if (this.whiteTime <= 0) return "black";
+        if (this.blackTime <= 0) return "white";
+        if (isCheckmate(this.board, this.turn)) return this.turn === "white" ? "black" : "white";
+        if (isStalemate(this.board, this.turn)) return "draw";
         return null;
+    }
+
+    get status() {
+        const status = {
+            isCheck: isInCheck(this.board, this.turn),
+            isTimeout: this.whiteTime <= 0 || this.blackTime <= 0,
+            isCheckmate: isCheckmate(this.board, this.turn),
+            isStalemate: isStalemate(this.board, this.turn),
+            winner: this.#determineWinner(),
+            isGameOver: false,
+        }
+        status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate;
+        return status;
     }
 }

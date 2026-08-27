@@ -1,1 +1,0 @@
-export const storage = $state({}); // Reactively set to the synchronized PlaySocket room storage

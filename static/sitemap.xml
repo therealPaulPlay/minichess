@@ -7,8 +7,11 @@
   <url>
     <loc>https://minichess.co</loc>
   </url>
+    <url>
+    <loc>https://minichess.co/play</loc>
+  </url>
   <url>
-    <loc>https://minichess.co/TODO-add-other-routes</loc>
+    <loc>https://minichess.co/TODO-add-potential-other-routes</loc>
   </url>
 
 </urlset>
