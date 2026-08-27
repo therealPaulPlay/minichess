@@ -13,7 +13,7 @@ const DIAGONALS: [number, number][] = [
 	[-1, -1],
 ];
 
-export function isWithinBounds(pos: Position): boolean {
+function isWithinBounds(pos: Position): boolean {
 	return pos.row >= 0 && pos.row < 5 && pos.col >= 0 && pos.col < 5;
 }
 
@@ -21,7 +21,7 @@ function cloneBoard(board: BoardGrid): BoardGrid {
 	return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
 }
 
-export function findKing(board: BoardGrid, color: PieceColor): Position | null {
+function findKing(board: BoardGrid, color: PieceColor): Position | null {
 	for (let r = 0; r < 5; r++) {
 		for (let c = 0; c < 5; c++) {
 			const cell = board[r][c];
@@ -33,7 +33,7 @@ export function findKing(board: BoardGrid, color: PieceColor): Position | null {
 	return null;
 }
 
-export function getPseudoLegalMoves(board: BoardGrid, from: Position): Position[] {
+function getPseudoLegalMoves(board: BoardGrid, from: Position): Position[] {
 	const piece = board[from.row][from.col];
 	if (!piece) return [];
 
@@ -73,7 +73,7 @@ export function getLegalMoves(board: BoardGrid, from: Position): Position[] {
 }
 
 // Check engine logic -------------------------------------------------------------------
-export function isSquareAttacked(board: BoardGrid, targetPos: Position, attackerColor: PieceColor): boolean {
+function isSquareAttacked(board: BoardGrid, targetPos: Position, attackerColor: PieceColor): boolean {
 	for (let r = 0; r < 5; r++) {
 		for (let c = 0; c < 5; c++) {
 			const piece = board[r][c];
@@ -90,12 +90,12 @@ export function isInCheck(board: BoardGrid, color: PieceColor): boolean {
 	const kingPos = findKing(board, color);
 	if (!kingPos) return false;
 
-	const enemyColor: PieceColor = color === "w" ? "b" : "w";
+	const enemyColor: PieceColor = color === "white" ? "black" : "white";
 	return isSquareAttacked(board, kingPos, enemyColor);
 }
 
 // Simulates a move on a cloned board to see if it leaves or places the player's King in check
-export function wouldCauseCheck(board: BoardGrid, move: Move, color: PieceColor): boolean {
+function wouldCauseCheck(board: BoardGrid, move: Move, color: PieceColor): boolean {
 	const nextBoard = cloneBoard(board);
 
 	const piece = nextBoard[move.from.row][move.from.col];
@@ -127,10 +127,9 @@ export function isStalemate(board: BoardGrid, color: PieceColor): boolean {
 }
 
 // Piece movement ----------------------------------------------------------------------
-
 function getPawnMoves(board: BoardGrid, pos: Position, color: PieceColor): Position[] {
 	const targets: Position[] = [];
-	const dir = color === "w" ? -1 : 1;
+	const dir = color === "white" ? -1 : 1;
 
 	const forward: Position = { row: pos.row + dir, col: pos.col };
 	if (isWithinBounds(forward) && board[forward.row][forward.col] === null) targets.push(forward);

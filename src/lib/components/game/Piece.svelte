@@ -38,7 +38,7 @@
 <div
 	class={[
 		"z-20 flex h-full w-full items-center justify-center self-center overflow-visible",
-		color === "w" ? "text-(--chess-piece-light)" : "text-black",
+		color === "white" ? "text-(--chess-piece-light)" : "text-black",
 		className,
 	]}
 	{...props}
