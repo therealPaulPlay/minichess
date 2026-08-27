@@ -20,13 +20,21 @@
 
 			let startX = 0;
 			let startY = 0;
+			let lastX = 0;
+			let currentTilt = 0;
 
 			// Move
 			function onPointerMove(e: PointerEvent) {
 				const dx = e.clientX - startX;
 				const dy = e.clientY - startY;
 
-				node.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+				// Tilt
+				const vx = e.clientX - lastX;
+				lastX = e.clientX;
+				const targetTilt = Math.min(Math.max(vx * 25, -25), 25);
+				currentTilt += (targetTilt - currentTilt) * 0.1;
+
+				node.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(1.1) rotate(${currentTilt}deg)`;
 			}
 
 			// Let go
@@ -77,6 +85,7 @@
 
 				startX = e.clientX;
 				startY = e.clientY;
+				lastX = e.clientX;
 
 				node.setPointerCapture(e.pointerId);
 				node.style.cursor = "grabbing";

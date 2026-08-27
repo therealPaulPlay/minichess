@@ -44,11 +44,6 @@
 	{...props}
 >
 	{#if Icon}
-		<Icon
-			class={[
-				"my-2 h-full w-full overflow-visible p-3 transition-transform",
-				draggable && "hover:cursor-grab",
-			]}
-		/>
+		<Icon class={["my-2 h-full w-full overflow-visible p-3", draggable && "hover:cursor-grab"]} />
 	{/if}
 </div>
