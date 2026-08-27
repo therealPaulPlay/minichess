@@ -1,6 +1,6 @@
 import { pieceAt } from "../engine/helpers.ts";
 import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
-import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types.ts";
+import type { BoardGrid, Position, PieceColor } from "../engine/types.ts";
 
 const INITIAL_TIME_SECONDS = 300;
 

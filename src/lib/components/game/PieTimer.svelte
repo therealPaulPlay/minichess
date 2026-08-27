@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { game } from "$lib/stores/gameStore.svelte";
-
 	const LOW_TIME_ALRT_THRESHOLD = 10; // Seconds
 	let { percentage }: { percentage: number } = $props();
 
@@ -12,7 +10,7 @@
 	style="--percentage: {safePercentage}%"
 	class:pie-gradient={safePercentage > 0}
 	class:bg-red-400={safePercentage <= 0}
-	class:animate-low-time={safePercentage <= LOW_TIME_ALRT_THRESHOLD * game.INITIAL_TIME_SECONDS}
+	class:animate-low-time={safePercentage <= LOW_TIME_ALRT_THRESHOLD * 0 /* TODO get actual time from multiplayer time system */}
 ></div>
 
 <style>

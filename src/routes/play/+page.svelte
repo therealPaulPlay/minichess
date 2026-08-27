@@ -16,7 +16,7 @@
 
 		try {
 			multiplayerState.socket = new PlaySocket(null, {
-				endpoint: "ws://localhost:4000", // Ws for local dev here, should be wss for production
+				endpoint: "ws://localhost:3000/socket", // Ws for local dev here, should be wss for production, I'd suggest a config.ts file that contains both the WSS endpoint as well as the Port for the server
 			});
 
 			multiplayerState.socket.onEvent("status", (status) => console.info("Multiplayer status:", status));

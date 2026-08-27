@@ -1,13 +1,19 @@
 import PlaySocketServer from "playsocketjs/server";
+import { createServer } from "node:http";
 import { getClientIp } from "./clientIp.ts";
 import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
 import { ChessGame, initialBoard } from "./gameLogic.ts";
 import { pieceAt } from "../engine/helpers.ts";
 
-const PORT = 4000;
+const PORT = 3000;
 
-let server = new PlaySocketServer({
-	port: Number(PORT),
+// In production server.js attaches the SvelteKit handler to this, so both share one port
+// On the dev server vite uses the port set up for vite, and the backend server here needs to be spun up separately (see readme)
+export const httpServer = createServer();
+
+const server = new PlaySocketServer({
+	server: httpServer,
+	path: "/socket",
 	verifyClient: (info, callback) => {
 		if (isWsUpgradeRateLimited(getClientIp(info.req))) return callback(false, 429, "Too Many Requests");
 		callback(true);
@@ -61,7 +67,9 @@ server.onEvent("storageUpdateRequested", () => {
 	// TODO only allow expliclty user-updatable keys & handle validation
 });
 
-// Clean exit -----------------------------------------------------------------
+// Start and clean exit -----------------------------------------------------------------
+httpServer.listen(PORT, () => console.log(`Listening on port ${PORT}.`));
+
 function shutdown() {
 	server.stop();
 	process.exit(0);

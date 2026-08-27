@@ -12,18 +12,8 @@
 	// TODO: Switch to better timer solution for multiplayer
 	// My idea: We store the timestamps for both black and white when their turn started + ended, and calculate the time left on the client by using the differences
 	// This would be time-zone independent and would only need syncing once each turn
-	const blackTimeLeft = $derived(
-		Math.min(
-			100,
-			Math.max(0, (multiplayerState.storage.blackTime / multiplayerState.storage.INITIAL_TIME_SECONDS) * 100),
-		),
-	);
-	const whiteTimeLeft = $derived(
-		Math.min(
-			100,
-			Math.max(0, (multiplayerState.storage.whiteTime / multiplayerState.storage.INITIAL_TIME_SECONDS) * 100),
-		),
-	);
+	const blackTimeLeft = 0;
+	const whiteTimeLeft = 0;
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 
