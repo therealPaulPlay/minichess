@@ -6,14 +6,10 @@
 	import type { Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import Progress from "$lib/components/ui/progress/progress.svelte";
-
-	let board; // TODO: Unused
+	import PieTimer from "./PieTimer.svelte";
 
 	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
 	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
-
-	// TODO: Remove debug log
-	console.log(`${game.INITIAL_TIME_SECONDS}/${game.blackTime}`);
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 
@@ -115,7 +111,7 @@
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
-			<div class="grid grid-cols-5 overflow-hidden" bind:this={board}>
+			<div class="grid grid-cols-5 overflow-hidden">
 				{#each game.board as row, rIndex}
 					{#each row as cell, cIndex}
 						{const col = $derived(String.fromCharCode(97 + cIndex))}
@@ -145,12 +141,12 @@
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator />
-			</div>
-			<div class="absolute -top-6 z-50 w-full opacity-50">
-				<Progress value={blackTimeLeft} />
-			</div>
-			<div class="absolute -bottom-6 z-50 w-full opacity-50">
-				<Progress value={whiteTimeLeft} />
+				<div class="absolute top-18 scale-60" class:opacity-20={game.turn == "w"}>
+					<PieTimer percentage={blackTimeLeft} />
+				</div>
+				<div class="absolute bottom-18 scale-60" class:opacity-20={game.turn == "b"}>
+					<PieTimer percentage={whiteTimeLeft} />
+				</div>
 			</div>
 		</div>
 	</div>

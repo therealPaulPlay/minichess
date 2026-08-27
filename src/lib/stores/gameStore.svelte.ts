@@ -2,7 +2,7 @@ import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/ru
 import type { BoardGrid, Position, PieceColor, Piece } from "../engine/types";
 import { browser } from "$app/environment";
 
-const INITIAL_TIME_SECONDS = 300;
+const INITIAL_TIME_SECONDS = 10;
 
 let pieceMoveSound: HTMLAudioElement | null = null;
 if (browser) {
