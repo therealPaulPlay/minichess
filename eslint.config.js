@@ -4,6 +4,7 @@ import svelte from "eslint-plugin-svelte";
 import { defineConfig, includeIgnoreFile } from "eslint/config";
 import globals from "globals";
 import ts from "typescript-eslint";
+import unusedImports from "eslint-plugin-unused-imports";
 
 const gitignorePath = path.resolve(import.meta.dirname, ".gitignore");
 
@@ -22,9 +23,6 @@ export default defineConfig(
 	},
 	{
 		files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
-		plugins: {
-			"unused-imports": unusedImports,
-		},
 		languageOptions: {
 			parserOptions: {
 				projectService: true,
@@ -34,6 +32,9 @@ export default defineConfig(
 		},
 	},
 	{
+		plugins: {
+			"unused-imports": unusedImports,
+		},
 		rules: {
 			"no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
 			"unused-imports/no-unused-imports": "error",

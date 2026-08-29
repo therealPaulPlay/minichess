@@ -5,8 +5,10 @@ import { browser } from "$app/environment";
 const INITIAL_TIME_SECONDS = 180;
 
 let pieceMoveSound: HTMLAudioElement | null = null;
+let pieceCaptureSound: HTMLAudioElement | null = null;
 if (browser) {
 	pieceMoveSound = new Audio("/sounds/piece-move.wav");
+	pieceCaptureSound = new Audio("/sounds/piece-capture.wav");
 }
 
 const initialBoard: BoardGrid = [
@@ -108,6 +110,8 @@ function createGame() {
 		const pieceToMove = board[from.row][from.col];
 		if (!pieceToMove) return;
 
+		const pieceAtPos = board[to.row][to.col];
+
 		// Apply pawn promotion
 		const isPromotion = pieceToMove.type === "p" && (to.row === 0 || to.row === 4);
 		const finalPiece = isPromotion ? { ...pieceToMove, type: "q" as const } : pieceToMove;
@@ -117,8 +121,11 @@ function createGame() {
 		board[from.row][from.col] = null;
 
 		// Sounds
-		pieceMoveSound?.play();
-		// TODO: Add an extra sound that would combine with the move sound for captures
+		const sound = pieceAtPos ? pieceCaptureSound : pieceMoveSound;
+		if (sound) {
+			sound.currentTime = 0;
+			sound.play();
+		}
 
 		// Switch turn and clear active selections
 		turn = turn === "w" ? "b" : "w";
@@ -180,7 +187,7 @@ function createGame() {
 
 		pieceAt,
 
-		handleSquareClick(pos: Position) {
+		handleSquareClick(pos: Position): Piece | undefined {
 			const clickedPiece = board[pos.row][pos.col];
 
 			if (clickedPiece && clickedPiece.color === turn) {
@@ -192,8 +199,9 @@ function createGame() {
 			if (selectedPos) {
 				const isValid = validMoves.some((m) => m.row === pos.row && m.col === pos.col);
 				if (isValid) {
+					const contentBeforeMove = board[pos.row][pos.col] as Piece;
 					move(selectedPos, pos);
-					return;
+					return contentBeforeMove;
 				}
 			}
 

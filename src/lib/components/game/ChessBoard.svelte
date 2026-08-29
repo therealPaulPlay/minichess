@@ -5,13 +5,21 @@
 	import type { Attachment } from "svelte/attachments";
 	import type { Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
-	import Progress from "$lib/components/ui/progress/progress.svelte";
 	import PieTimer from "./PieTimer.svelte";
+	import Streamer from "$lib/components/effects/Streamer.svelte";
+
+	const MAX_SNAP_RADIUS = 80; // Radius in px
 
 	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
 	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
 
-	const MAX_SNAP_RADIUS = 80; // Radius in px
+	let captureTriggers = $state<Record<string, number>>({});
+	let streamerElement = $state<ReturnType<typeof Streamer>>();
+
+	function triggerCapture(targetSquare: string) {
+		console.log(`trigger at: ${targetSquare}`);
+		captureTriggers[targetSquare] = (captureTriggers[targetSquare] || 0) + 1;
+	}
 
 	// Most of this code is for the drag-and-drop effect
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
@@ -70,7 +78,10 @@
 					const dropRow = parseInt(closestSquare.dataset.row!);
 					const dropCol = parseInt(closestSquare.dataset.col!);
 
-					game.handleSquareClick({ row: dropRow, col: dropCol } as Position);
+					let pieceAtPos = game.handleSquareClick({ row: dropRow, col: dropCol } as Position);
+					if (pieceAtPos) {
+						triggerCapture(`${String.fromCharCode(97 + dropCol)}${5 - dropRow}`);
+					}
 				}
 
 				node.style.zIndex = "";
@@ -120,7 +131,7 @@
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
-			<div class="grid grid-cols-5 overflow-hidden">
+			<div class="grid grid-cols-5">
 				{#each game.board as row, rIndex}
 					{#each row as cell, cIndex}
 						{const col = $derived(String.fromCharCode(97 + cIndex))}
@@ -134,13 +145,17 @@
 							col={cIndex}
 							isHighlighted={highlighted}
 							piece={cell?.type && cell?.color ? cell : null}
-							onclick={() => game.handleSquareClick({ row: rIndex, col: cIndex })}
+							onclick={() => {
+								let pieceAtPos = game.handleSquareClick({ row: rIndex, col: cIndex });
+								if (pieceAtPos) triggerCapture(square);
+							}}
 						>
 							{#if cell?.type && cell.color}
 								<Piece
 									type={cell.type}
 									color={cell.color}
 									draggable={cell.color === game.turn}
+									triggerEffect={captureTriggers[square] || 0}
 									{@attach draggable(rIndex, cIndex)}
 								/>
 							{/if}
@@ -150,12 +165,13 @@
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator />
-				<div class="absolute top-18 scale-60" class:opacity-20={game.turn == "w"}>
+				<div class="absolute top-18" class:opacity-20={game.turn == "w"}>
 					<PieTimer percentage={blackTimeLeft} />
 				</div>
-				<div class="absolute bottom-18 scale-60" class:opacity-20={game.turn == "b"}>
+				<div class="absolute bottom-18" class:opacity-20={game.turn == "b"}>
 					<PieTimer percentage={whiteTimeLeft} />
 				</div>
+				<Streamer bind:this={streamerElement} />
 			</div>
 		</div>
 	</div>
