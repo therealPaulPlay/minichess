@@ -2,7 +2,7 @@
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { Position, Piece as PieceData } from "$lib/engine/types";
+	import type { Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import PieTimer from "./PieTimer.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
@@ -120,7 +120,11 @@
 				if (e.button !== 0 && e.pointerType === "mouse") return;
 
 				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
-				if (pieceAt(multiplayerState.storage?.board, { row, col })?.color !== multiplayerState.storage.turn) return;
+				if (
+					!multiplayerState.storage?.board ||
+					pieceAt(multiplayerState.storage.board, { row, col })?.color !== multiplayerState.storage?.turn
+				)
+					return;
 
 				startX = e.clientX;
 				startY = e.clientY;
@@ -192,13 +196,13 @@
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator />
-				<div class="absolute top-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "w"}>
+				<div class="absolute top-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "white"}>
 					<PieTimer percentage={blackTimeLeft} />
 				</div>
-				<div class="absolute bottom-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "b"}>
+				<div class="absolute bottom-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "black"}>
 					<PieTimer percentage={whiteTimeLeft} />
 				</div>
-				<Streamer bind:this={streamerElement} />
+				<!-- TODO: Re-integrate piece capture animations and move/capture sounds (piece-move.wav, piece-capture.wav) with multiplayer storage updates/events -->
 			</div>
 		</div>
 	</div>

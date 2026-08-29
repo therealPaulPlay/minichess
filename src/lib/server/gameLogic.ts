@@ -1,6 +1,6 @@
 import { pieceAt } from "../engine/helpers.ts";
 import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
-import type { BoardGrid, Position, PieceColor } from "../engine/types.ts";
+import type { BoardGrid, Position, PieceColor, GameStatus } from "../engine/types.ts";
 
 const INITIAL_TIME_SECONDS = 300;
 
@@ -51,7 +51,7 @@ export class ChessGame {
     #timerId: ReturnType<typeof setInterval> | null = null;
 
     #tick() {
-        if (this.isGameOver || !this.#lastTickTime) return;
+        if (this.status.isGameOver || !this.#lastTickTime) return;
 
         const now = performance.now();
         const deltaSeconds = (now - this.#lastTickTime) / 1000;
@@ -64,7 +64,7 @@ export class ChessGame {
     }
 
     #startClock() {
-        if (this.isGameOver || this.#timerId !== null) return;
+        if (this.status.isGameOver || this.#timerId !== null) return;
 
         this.#lastTickTime = performance.now();
 
@@ -83,7 +83,7 @@ export class ChessGame {
 
     // Pieces ---------------------------------------------
     move(from: Position, to: Position) {
-        if (this.isGameOver) return "Game is over";
+        if (this.status.isGameOver) return "Game is over";
 
         const pieceToMove = pieceAt(this.board, { row: from.row, col: from.col });
         if (!pieceToMove) return "Piece not found";
@@ -105,7 +105,7 @@ export class ChessGame {
         if (!this.isClockRunning) this.#startClock();
         else this.#lastTickTime = performance.now();
 
-        if (this.isCheckmate || this.isStalemate) this.#stopClock();
+        if (this.status.isCheckmate || this.status.isStalemate) this.#stopClock();
         return true; // Valid move, executed
     }
 
@@ -123,15 +123,15 @@ export class ChessGame {
         return null;
     }
 
-    get status() {
-        const status = {
+    get status(): GameStatus {
+        const status: GameStatus = {
             isCheck: isInCheck(this.board, this.turn),
             isTimeout: this.whiteTime <= 0 || this.blackTime <= 0,
             isCheckmate: isCheckmate(this.board, this.turn),
             isStalemate: isStalemate(this.board, this.turn),
             winner: this.#determineWinner(),
             isGameOver: false,
-        }
+        };
         status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate;
         return status;
     }

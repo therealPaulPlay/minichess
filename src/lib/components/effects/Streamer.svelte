@@ -1,8 +1,9 @@
 <!-- components/effects/Streamer.svelte -->
 <script lang="ts">
-	import { game } from "$lib/stores/gameStore.svelte";
+	import type { PieceColor } from "$lib/engine/types";
 
-	let { trigger = 0 } = $props();
+	// TODO: Re-wire streamer / capture animation triggers and sounds with multiplayer events
+	let { trigger = 0, color = "white" }: { trigger?: number; color?: PieceColor } = $props();
 
 	let isPlaying = $state(false);
 	let ctrlX = $state(50);
@@ -29,7 +30,7 @@
 
 <svg viewBox="0 0 100 100" class="pointer-events-none h-6 w-6 overflow-visible">
 	<path
-		class="fill-none {game.turn == 'w'
+		class="fill-none {color === 'white'
 			? 'stroke-(--chess-piece-light)'
 			: 'stroke-black'} stroke-8 [stroke-dasharray:40_300] [stroke-dashoffset:40] [stroke-linecap:round] {isPlaying
 			? 'animate-swoosh'

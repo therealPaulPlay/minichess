@@ -18,3 +18,21 @@ export interface Move {
 	from: Position;
 	to: Position;
 }
+
+export interface GameStatus {
+	isCheck: boolean;
+	isTimeout: boolean;
+	isCheckmate: boolean;
+	isStalemate: boolean;
+	winner: PieceColor | "draw" | null;
+	isGameOver: boolean;
+}
+
+export interface RoomStorage {
+	turn?: PieceColor;
+	board?: BoardGrid;
+	blackTime?: number;
+	whiteTime?: number;
+	status?: GameStatus;
+	[key: string]: unknown;
+}

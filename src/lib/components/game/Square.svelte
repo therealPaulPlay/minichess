@@ -21,7 +21,7 @@
 		isDark: boolean;
 		isHighlighted?: boolean;
 		piece?: Piece | null;
-		onclick?: any;
+		onclick?: (_event: MouseEvent) => void;
 		children?: Snippet;
 	} = $props();
 

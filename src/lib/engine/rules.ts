@@ -1,4 +1,4 @@
-import type { BoardGrid, Position, PieceColor, Piece, SquareContent, Move } from "./types";
+import type { BoardGrid, Position, PieceColor, Move } from "./types";
 
 const ORTHOGONALS: [number, number][] = [
 	[1, 0],

@@ -51,16 +51,17 @@
 		<Icon class="my-2 h-full w-full overflow-visible p-3 {draggable ? 'hover:cursor-grab' : ''}" />
 	{/if}
 	<!-- Streamers Overlay -->
+	<!-- TODO: Re-wire capture effect animation / triggers with multiplayer game state -->
 	<div class="pointer-events-none absolute inset-0 -top-6 flex items-center justify-center">
 		<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 		<div class="rotate-180">
-			<Streamer trigger={triggerEffect} />
+			<Streamer trigger={triggerEffect} {color} />
 		</div>
 		<div class="-translate-y-3 rotate-255">
-			<Streamer trigger={triggerEffect} />
+			<Streamer trigger={triggerEffect} {color} />
 		</div>
 		<div class="-rotate-90">
-			<Streamer trigger={triggerEffect} />
+			<Streamer trigger={triggerEffect} {color} />
 		</div>
 	</div>
 </div>

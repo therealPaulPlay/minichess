@@ -5,7 +5,6 @@ import unusedImports from "eslint-plugin-unused-imports";
 import { defineConfig, includeIgnoreFile } from "eslint/config";
 import globals from "globals";
 import ts from "typescript-eslint";
-import unusedImports from "eslint-plugin-unused-imports";
 
 const gitignorePath = path.resolve(import.meta.dirname, ".gitignore");
 
