@@ -1,6 +1,7 @@
 import path from "node:path";
 import js from "@eslint/js";
 import svelte from "eslint-plugin-svelte";
+import unusedImports from "eslint-plugin-unused-imports";
 import { defineConfig, includeIgnoreFile } from "eslint/config";
 import globals from "globals";
 import ts from "typescript-eslint";

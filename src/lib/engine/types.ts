@@ -1,5 +1,5 @@
 export type PieceType = "p" | "n" | "b" | "r" | "q" | "k";
-export type PieceColor = "w" | "b";
+export type PieceColor = "white" | "black";
 
 export interface Piece {
 	type: PieceType;

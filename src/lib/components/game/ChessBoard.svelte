@@ -1,24 +1,55 @@
 <script lang="ts">
 	import Square from "$lib/components/game/Square.svelte";
-	import { game } from "$lib/stores/gameStore.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { Position } from "$lib/engine/types";
+	import type { Position, Piece as PieceData } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import PieTimer from "./PieTimer.svelte";
-	import Streamer from "$lib/components/effects/Streamer.svelte";
+	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
+	import { pieceAt } from "$lib/engine/helpers";
+	import { getLegalMoves } from "$lib/engine/rules";
+
+	// TODO: Switch to better timer solution for multiplayer
+	// My idea: We store the timestamps for both black and white when their turn started + ended, and calculate the time left on the client by using the differences
+	// This would be time-zone independent and would only need syncing once each turn
+	const blackTimeLeft = 0;
+	const whiteTimeLeft = 0;
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 
-	const blackTimeLeft = $derived(Math.min(100, Math.max(0, (game.blackTime / game.INITIAL_TIME_SECONDS) * 100)));
-	const whiteTimeLeft = $derived(Math.min(100, Math.max(0, (game.whiteTime / game.INITIAL_TIME_SECONDS) * 100)));
+	// Current selected position & valid moves for that position
+	let selectedPos: Position | null = $state(null);
+	const validMoves = $derived(
+		multiplayerState.storage?.board && selectedPos ? getLegalMoves(multiplayerState.storage?.board, selectedPos) : [],
+	);
 
-	let captureTriggers = $state<Record<string, number>>({});
-	let streamerElement = $state<ReturnType<typeof Streamer>>();
+	async function handleClickAndMove(pos: Position) {
+		const board = multiplayerState.storage?.board;
+		if (!board) return console.warn("Board not loaded.");
 
-	function triggerCapture(targetSquare: string) {
-		console.log(`trigger at: ${targetSquare}`);
-		captureTriggers[targetSquare] = (captureTriggers[targetSquare] || 0) + 1;
+		// Clicked on one's own piece, select it
+		// TODO: Ensure whoever plays white can only select white, and whoever plays black can only select black
+		const clickedPiece = board[pos.row]?.[pos.col];
+		if (clickedPiece?.color === multiplayerState.storage?.turn) return (selectedPos = pos);
+
+		// Anything else is a move target for the current selection, empty squares included
+		if (selectedPos) {
+			const isValid = validMoves.some((m) => m.row === pos.row && m.col === pos.col);
+			if (isValid) {
+				const from = selectedPos;
+				selectedPos = null; // Deselect before the request
+				try {
+					// TODO: Don't use a request here, insetad append to an array of moves from which we reconstruct the current board
+					await multiplayerState.socket?.sendRequest("move-piece", { currentPos: from, newPos: pos });
+				} catch (error) {
+					// TODO: proper user-facing error handling
+					console.error("Error moving piece:", error);
+				}
+				return;
+			}
+		}
+
+		selectedPos = null;
 	}
 
 	// Most of this code is for the drag-and-drop effect
@@ -78,10 +109,7 @@
 					const dropRow = parseInt(closestSquare.dataset.row!);
 					const dropCol = parseInt(closestSquare.dataset.col!);
 
-					let pieceAtPos = game.handleSquareClick({ row: dropRow, col: dropCol } as Position);
-					if (pieceAtPos) {
-						triggerCapture(`${String.fromCharCode(97 + dropCol)}${5 - dropRow}`);
-					}
+					handleClickAndMove({ row: dropRow, col: dropCol } as Position);
 				}
 
 				node.style.zIndex = "";
@@ -92,7 +120,7 @@
 				if (e.button !== 0 && e.pointerType === "mouse") return;
 
 				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
-				if (game.pieceAt({ row, col })?.color !== game.turn) return;
+				if (pieceAt(multiplayerState.storage?.board, { row, col })?.color !== multiplayerState.storage.turn) return;
 
 				startX = e.clientX;
 				startY = e.clientY;
@@ -108,7 +136,7 @@
 
 				node.style.cursor = "grabbing";
 
-				game.handleSquareClick({ row, col } as Position);
+				handleClickAndMove({ row, col } as Position);
 			}
 
 			node.addEventListener("pointerdown", onPointerDown);
@@ -131,44 +159,43 @@
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
-			<div class="grid grid-cols-5">
-				{#each game.board as row, rIndex}
-					{#each row as cell, cIndex}
-						{const col = $derived(String.fromCharCode(97 + cIndex))}
-						{const rowLabel = $derived(5 - Math.floor(rIndex))}
-						{const square = $derived(`${col}${rowLabel}`)}
-						{const highlighted = $derived(isHighlighted(rIndex, cIndex, game.validMoves))}
-						<Square
-							isDark={(cIndex + rIndex) % 2 == 0}
-							{square}
-							row={rIndex}
-							col={cIndex}
-							isHighlighted={highlighted}
-							piece={cell?.type && cell?.color ? cell : null}
-							onclick={() => {
-								let pieceAtPos = game.handleSquareClick({ row: rIndex, col: cIndex });
-								if (pieceAtPos) triggerCapture(square);
-							}}
-						>
-							{#if cell?.type && cell.color}
-								<Piece
-									type={cell.type}
-									color={cell.color}
-									draggable={cell.color === game.turn}
-									triggerEffect={captureTriggers[square] || 0}
-									{@attach draggable(rIndex, cIndex)}
-								/>
-							{/if}
-						</Square>
+			<div class="grid grid-cols-5 overflow-hidden">
+				{#if multiplayerState.storage?.board}
+					{#each multiplayerState.storage.board as row, rIndex}
+						{#each row as cell, cIndex}
+							{const col = $derived(String.fromCharCode(97 + cIndex))}
+							{const rowLabel = $derived(5 - Math.floor(rIndex))}
+							{const square = $derived(`${col}${rowLabel}`)}
+							{const highlighted = $derived(isHighlighted(rIndex, cIndex, validMoves))}
+							<Square
+								isDark={(cIndex + rIndex) % 2 == 0}
+								{square}
+								row={rIndex}
+								col={cIndex}
+								isHighlighted={highlighted}
+								piece={cell?.type && cell?.color ? cell : null}
+							>
+								{#if cell?.type && cell.color}
+									<Piece
+										type={cell.type}
+										color={cell.color}
+										draggable={cell.color === multiplayerState.storage?.turn}
+										{@attach draggable(rIndex, cIndex)}
+									/>
+								{/if}
+							</Square>
+						{/each}
 					{/each}
-				{/each}
+				{:else}
+					<p>Board not transmitted by server.</p>
+				{/if}
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator />
-				<div class="absolute top-18" class:opacity-20={game.turn == "w"}>
+				<div class="absolute top-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "w"}>
 					<PieTimer percentage={blackTimeLeft} />
 				</div>
-				<div class="absolute bottom-18" class:opacity-20={game.turn == "b"}>
+				<div class="absolute bottom-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "b"}>
 					<PieTimer percentage={whiteTimeLeft} />
 				</div>
 				<Streamer bind:this={streamerElement} />
