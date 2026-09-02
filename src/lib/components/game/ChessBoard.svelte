@@ -2,12 +2,13 @@
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { Position } from "$lib/engine/types";
+	import type { PieceColor, Position, RoomStorage } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import PieTimer from "./PieTimer.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
+	import { onMount } from "svelte";
 
 	// TODO: Switch to better timer solution for multiplayer
 	// My idea: We store the timestamps for both black and white when their turn started + ended, and calculate the time left on the client by using the differences
@@ -16,6 +17,19 @@
 	const whiteTimeLeft = 0;
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
+
+	let canPlay = $state(true);
+
+	$effect(() => {
+		console.log("canPlay ", canPlay);
+	});
+
+	multiplayerState.socket?.onEvent("storageUpdated", (storage: RoomStorage) => {
+		const userId = multiplayerState.socket?.id;
+		const activePlayer = storage?.turn === "white" ? storage?.meta?.whiteId : storage?.meta?.blackId;
+
+		canPlay = activePlayer === userId;
+	});
 
 	// Current selected position & valid moves for that position
 	let selectedPos: Position | null = $state(null);
@@ -27,8 +41,8 @@
 		const board = multiplayerState.storage?.board;
 		if (!board) return console.warn("Board not loaded.");
 
-		// Clicked on one's own piece, select it
-		// TODO: Ensure whoever plays white can only select white, and whoever plays black can only select black
+		if (!canPlay) return;
+
 		const clickedPiece = board[pos.row]?.[pos.col];
 		if (clickedPiece?.color === multiplayerState.storage?.turn) return (selectedPos = pos);
 
@@ -55,6 +69,12 @@
 	// Most of this code is for the drag-and-drop effect
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
 		return (node) => {
+			const board = multiplayerState.storage?.board;
+			if (!board) return () => {};
+
+			const clickedPieceColor = board[row]?.[col]?.color;
+			if (clickedPieceColor !== userColor()) return () => {};
+
 			node.addEventListener("dragstart", (e) => e.preventDefault());
 
 			let startX = 0;
@@ -158,12 +178,33 @@
 	function isHighlighted(row: number, col: number, validMoves: Array<Position>) {
 		return validMoves.some((m) => m.row === row && m.col === col);
 	}
+
+	function userColor(): PieceColor {
+		if (multiplayerState.storage.meta?.whiteId === multiplayerState.socket?.id) {
+			console.log("user is white");
+			return "white";
+		} else {
+			console.log("user is black");
+			return "black";
+		}
+	}
+
+	onMount(() => {
+		const storage = multiplayerState.storage;
+		const userId = multiplayerState.socket?.id;
+		const currentTurn = storage?.turn;
+		const whiteId = storage?.meta?.whiteId;
+		const blackId = storage?.meta?.blackId;
+
+		const activePlayer = currentTurn === "white" ? whiteId : blackId;
+		canPlay = activePlayer === userId;
+	});
 </script>
 
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
-			<div class="grid grid-cols-5 overflow-hidden">
+			<div class="grid grid-cols-5">
 				{#if multiplayerState.storage?.board}
 					{#each multiplayerState.storage.board as row, rIndex}
 						{#each row as cell, cIndex}
@@ -183,7 +224,7 @@
 									<Piece
 										type={cell.type}
 										color={cell.color}
-										draggable={cell.color === multiplayerState.storage?.turn}
+										draggable={cell.color === userColor()}
 										{@attach draggable(rIndex, cIndex)}
 									/>
 								{/if}

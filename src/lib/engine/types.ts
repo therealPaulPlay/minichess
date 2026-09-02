@@ -28,11 +28,19 @@ export interface GameStatus {
 	isGameOver: boolean;
 }
 
+export interface Meta {
+	isPrivate: boolean;
+	roomId?: string;
+	whiteId?: string;
+	blackId?: string;
+}
+
 export interface RoomStorage {
 	turn?: PieceColor;
 	board?: BoardGrid;
 	blackTime?: number;
 	whiteTime?: number;
 	status?: GameStatus;
+	meta?: Meta;
 	[key: string]: unknown;
 }

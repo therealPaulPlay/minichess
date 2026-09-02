@@ -1,6 +1,7 @@
 <script>
 	import Button from "$lib/components/ui/button/button.svelte";
 	import Square from "$lib/components/game/Square.svelte";
+	import PrivateMatchModal from "./PrivateMatchModal.svelte";
 	import { goto } from "$app/navigation";
 </script>
 
@@ -15,7 +16,9 @@
 			<span class="inline-block origin-center transition-transform delay-500 ease-in-out hover:scale-50">Mini</span
 			>chess
 		</h1>
-		<Button size="lg" class="bg-dark cursor-pointer text-xl" onclick={() => goto("/play")}>Play</Button>
+		<div class="flex flex-col items-center justify-center gap-2">
+			<Button size="lg" class="bg-dark w-fit cursor-pointer text-xl" onclick={() => goto("/play")}>Play</Button>
+			<PrivateMatchModal />
+		</div>
 	</div>
 </main>
-
