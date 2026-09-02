@@ -15,7 +15,10 @@ export const httpServer = createServer();
 const server = new PlaySocketServer({
 	server: httpServer,
 	path: "/socket",
-	verifyClient: (info: { req: IncomingMessage }, callback: (_res: boolean, _code?: number, _message?: string) => void) => {
+	verifyClient: (
+		info: { req: IncomingMessage },
+		callback: (_res: boolean, _code?: number, _message?: string) => void,
+	) => {
 		if (isWsUpgradeRateLimited(getClientIp(info.req))) return callback(false, 429, "Too Many Requests");
 		callback(true);
 	},
@@ -24,22 +27,32 @@ const server = new PlaySocketServer({
 const chessGameInstances = new Map<string, ChessGame>(); // Room ID -> chess game instance
 
 server.onEvent("roomCreationRequested", () => {
-	// Client-passed storage is ignored, we override with the same starter room storage
+	const starter = new ChessGame();
 	return {
 		turn: "white",
 		board: initialBoard,
-		blackTime: 0,
-		whiteTime: 0,
-		status: new ChessGame().status,
+		blackTime: starter.blackTime,
+		whiteTime: starter.whiteTime,
+		turnStartedAt: null,
+		status: starter.status,
 	};
 });
 
 server.onEvent("roomCreated", (roomId: string) => {
 	const chessGame = new ChessGame();
+
+	chessGame.onTimeout = () => {
+		server.updateRoomStorage(roomId, "whiteTime", "set", chessGame.whiteTime);
+		server.updateRoomStorage(roomId, "blackTime", "set", chessGame.blackTime);
+		server.updateRoomStorage(roomId, "turnStartedAt", "set", null);
+		server.updateRoomStorage(roomId, "status", "set", chessGame.status);
+	};
+
 	chessGameInstances.set(roomId, chessGame);
 });
 
 server.onEvent("roomDestroyed", (roomId: string) => {
+	chessGameInstances.get(roomId)?.stopClock();
 	chessGameInstances.delete(roomId);
 });
 
@@ -48,26 +61,32 @@ interface MovePieceData {
 	newPos: { row: number; col: number };
 }
 
-server.onEvent("requestReceived", ({ roomId, name, data }: { clientId: string; roomId: string | null; name: string; data: unknown }) => {
-	if (name === "move-piece") {
-		const moveData = data as MovePieceData | undefined;
-		if (!roomId || !moveData?.currentPos || !moveData?.newPos) return;
-		const roomStorage = server.getRoomStorage(roomId);
-		const chessGame = chessGameInstances.get(roomId);
-		if (!roomStorage || !chessGame) return false;
-		// TODO: Validate piece color at currentPos matches that client's assigned color, otherwise reject
-		const allowed = chessGame.move(moveData.currentPos, moveData.newPos);
+server.onEvent(
+	"requestReceived",
+	({ roomId, name, data }: { clientId: string; roomId: string | null; name: string; data: unknown }) => {
+		if (name === "move-piece") {
+			const moveData = data as MovePieceData | undefined;
+			if (!roomId || !moveData?.currentPos || !moveData?.newPos) return;
+			const roomStorage = server.getRoomStorage(roomId);
+			const chessGame = chessGameInstances.get(roomId);
+			if (!roomStorage || !chessGame) return false;
+			// TODO: Validate piece color at currentPos matches that client's assigned color, otherwise reject
+			const allowed = chessGame.move(moveData.currentPos, moveData.newPos);
 
-		// If the move was allowed, toggle who's turn it is
-		if (allowed === true) {
-			const turn = chessGame.changeTurn();
-			server.updateRoomStorage(roomId, "turn", "set", turn);
-			server.updateRoomStorage(roomId, "board", "set", chessGame.board);
-			server.updateRoomStorage(roomId, "status", "set", chessGame.status);
+			// If the move was allowed, toggle who's turn it is
+			if (allowed === true) {
+				const turn = chessGame.changeTurn();
+				server.updateRoomStorage(roomId, "turn", "set", turn);
+				server.updateRoomStorage(roomId, "board", "set", chessGame.board);
+				server.updateRoomStorage(roomId, "status", "set", chessGame.status);
+				server.updateRoomStorage(roomId, "whiteTime", "set", chessGame.whiteTime);
+				server.updateRoomStorage(roomId, "blackTime", "set", chessGame.blackTime);
+				server.updateRoomStorage(roomId, "turnStartedAt", "set", chessGame.turnStartedAt);
+			}
+			return allowed; // False if not allowed -> blocks the update and reverts
 		}
-		return allowed; // False if not allowed -> blocks the update and reverts
-	}
-});
+	},
+);
 
 server.onEvent("storageUpdateRequested", () => {
 	// TODO only allow expliclty user-updatable keys & handle validation

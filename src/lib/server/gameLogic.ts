@@ -2,7 +2,7 @@ import { pieceAt } from "../engine/helpers.ts";
 import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
 import type { BoardGrid, Position, PieceColor, GameStatus } from "../engine/types.ts";
 
-const INITIAL_TIME_SECONDS = 300;
+const INITIAL_TIME_MS = 300_000;
 
 export const initialBoard: BoardGrid = [
 	[
@@ -41,44 +41,42 @@ export class ChessGame {
 	turn: PieceColor = "white";
 
 	// Clock ----------------------------------------------
-	// TODO this needs rewriting for multiplayer
-	// Syncing every tick would be super heavy on the network / not feasible, instead broadcast a timestamp
-	whiteTime = INITIAL_TIME_SECONDS;
-	blackTime = INITIAL_TIME_SECONDS;
-	isClockRunning = false;
+	whiteTime = INITIAL_TIME_MS;
+	blackTime = INITIAL_TIME_MS;
+	turnStartedAt: number | null = null;
+	private timeoutTimer: NodeJS.Timeout | null = null;
 
-	private lastTickTime: number | null = null;
-	private timerId: ReturnType<typeof setInterval> | null = null;
+	// A callback so we can alert the socket server when time runs out
+	onTimeout?: () => void;
 
-	private tick() {
-		if (this.status.isGameOver || !this.lastTickTime) return;
-
-		const now = performance.now();
-		const deltaSeconds = (now - this.lastTickTime) / 1000;
-		this.lastTickTime = now;
-
-		if (this.turn === "white") this.whiteTime = Math.max(0, this.whiteTime - deltaSeconds);
-		else this.blackTime = Math.max(0, this.blackTime - deltaSeconds);
-
-		if (this.whiteTime === 0 || this.blackTime === 0) this.stopClock();
-	}
-
-	private startClock() {
-		if (this.status.isGameOver || this.timerId !== null) return;
-
-		this.lastTickTime = performance.now();
-
-		this.timerId = setInterval(() => this.tick(), 100); // 100ms
-		this.isClockRunning = true;
-	}
-
-	private stopClock() {
-		if (this.timerId) {
-			clearInterval(this.timerId);
-			this.timerId = null;
+	private armTimeout() {
+		if (this.timeoutTimer) {
+			clearTimeout(this.timeoutTimer);
+			this.timeoutTimer = null;
 		}
-		this.lastTickTime = null;
-		this.isClockRunning = false;
+
+		const remaining = this.turn === "white" ? this.whiteTime : this.blackTime;
+
+		if (remaining <= 0) {
+			this.onTimeout?.();
+			return;
+		}
+
+		this.timeoutTimer = setTimeout(() => {
+			if (this.turn === "white") this.whiteTime = 0;
+			else this.blackTime = 0;
+
+			this.turnStartedAt = null;
+			this.onTimeout?.();
+		}, remaining);
+	}
+
+	stopClock() {
+		if (this.timeoutTimer) {
+			clearTimeout(this.timeoutTimer);
+			this.timeoutTimer = null;
+		}
+		this.turnStartedAt = null;
 	}
 
 	// Pieces ---------------------------------------------
@@ -93,6 +91,21 @@ export class ChessGame {
 		const isValid = validMoves.some((m) => m.row === to.row && m.col === to.col);
 		if (!isValid) return "Illegal move";
 
+		// Clock
+		if (this.turnStartedAt !== null) {
+			const elapsed = Date.now() - this.turnStartedAt;
+			if (this.turn === "white") {
+				this.whiteTime = Math.max(0, this.whiteTime - elapsed);
+			} else {
+				this.blackTime = Math.max(0, this.blackTime - elapsed);
+			}
+		}
+
+		if (this.whiteTime <= 0 || this.blackTime <= 0) {
+			this.stopClock();
+			return "Time expired";
+		}
+
 		// Apply pawn promotion
 		const isPromotion = pieceToMove.type === "p" && (to.row === 0 || to.row === 4);
 		const finalPiece = isPromotion ? { ...pieceToMove, type: "q" as const } : pieceToMove;
@@ -101,16 +114,22 @@ export class ChessGame {
 		this.board[to.row][to.col] = finalPiece;
 		this.board[from.row][from.col] = null;
 
-		// Clock
-		if (!this.isClockRunning) this.startClock();
-		else this.lastTickTime = performance.now();
-
 		if (this.status.isCheckmate || this.status.isStalemate) this.stopClock();
 		return true; // Valid move, executed
 	}
 
 	changeTurn() {
 		this.turn = this.turn === "white" ? "black" : "white";
+
+		this.turnStartedAt = Date.now();
+
+		// Arm the alarm for the player whose turn it now is
+		if (!this.status.isGameOver) {
+			this.armTimeout();
+		} else {
+			this.stopClock();
+		}
+
 		return this.turn;
 	}
 

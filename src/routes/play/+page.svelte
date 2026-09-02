@@ -2,15 +2,13 @@
 	import { ChevronLeftIcon } from "@lucide/svelte";
 	import ChessBoard from "$lib/components/game/ChessBoard.svelte";
 	import Button from "$lib/components/ui/button/button.svelte";
-	// import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
-	// import type { RoomStorage } from "$lib/engine/types";
 	import { goto } from "$app/navigation";
-	// import PlaySocket from "playsocketjs";
-	// import { onMount } from "svelte";
 	import { fade } from "svelte/transition";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 
 	let inMatchmaking = $state(false);
+
+	// TODO: implement matchmaking
 
 	function quitGame() {
 		if (multiplayerState.socket?.id) multiplayerState.socket.destroy();

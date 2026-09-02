@@ -13,18 +13,47 @@
 	// TODO: Switch to better timer solution for multiplayer
 	// My idea: We store the timestamps for both black and white when their turn started + ended, and calculate the time left on the client by using the differences
 	// This would be time-zone independent and would only need syncing once each turn
-	const blackTimeLeft = 0;
-	const whiteTimeLeft = 0;
-
 	const MAX_SNAP_RADIUS = 80; // Radius in px
+	const INITIAL_TIME_MS = 300_000;
+
+	let blackTimeLeft = $state(INITIAL_TIME_MS);
+	let whiteTimeLeft = $state(INITIAL_TIME_MS);
+
+	$effect(() => {
+		const storage = multiplayerState.storage;
+		if (!storage) return;
+
+		// Update base times from server
+		whiteTimeLeft = storage.whiteTime ?? INITIAL_TIME_MS;
+		blackTimeLeft = storage.blackTime ?? INITIAL_TIME_MS;
+
+		// If game is over or clock hasn't started yet, don't run an animation loop
+		if (storage.status?.isGameOver || !storage.turnStartedAt) return;
+
+		const baseWhite = storage.whiteTime ?? INITIAL_TIME_MS;
+		const baseBlack = storage.blackTime ?? INITIAL_TIME_MS;
+		const startedAt = storage.turnStartedAt;
+		const activeTurn = storage.turn;
+
+		// Update the active clock
+		const interval = setInterval(() => {
+			const elapsed = Date.now() - startedAt;
+			if (activeTurn === "white") {
+				whiteTimeLeft = Math.max(0, baseWhite - elapsed);
+			} else {
+				blackTimeLeft = Math.max(0, baseBlack - elapsed);
+			}
+		}, 16);
+		return () => clearInterval(interval);
+	});
+
+	const whitePercentage = $derived((whiteTimeLeft / INITIAL_TIME_MS) * 100);
+	const blackPercentage = $derived((blackTimeLeft / INITIAL_TIME_MS) * 100);
 
 	let canPlay = $state(true);
 
-	$effect(() => {
-		console.log("canPlay ", canPlay);
-	});
-
 	multiplayerState.socket?.onEvent("storageUpdated", (storage: RoomStorage) => {
+		multiplayerState.storage = storage;
 		const userId = multiplayerState.socket?.id;
 		const activePlayer = storage?.turn === "white" ? storage?.meta?.whiteId : storage?.meta?.blackId;
 
@@ -180,13 +209,7 @@
 	}
 
 	function userColor(): PieceColor {
-		if (multiplayerState.storage.meta?.whiteId === multiplayerState.socket?.id) {
-			console.log("user is white");
-			return "white";
-		} else {
-			console.log("user is black");
-			return "black";
-		}
+		return multiplayerState.storage.meta?.whiteId === multiplayerState.socket?.id ? "white" : "black";
 	}
 
 	onMount(() => {
@@ -238,10 +261,10 @@
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator />
 				<div class="absolute top-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "white"}>
-					<PieTimer percentage={blackTimeLeft} />
+					<PieTimer percentage={blackPercentage} />
 				</div>
 				<div class="absolute bottom-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "black"}>
-					<PieTimer percentage={whiteTimeLeft} />
+					<PieTimer percentage={whitePercentage} />
 				</div>
 				<!-- TODO: Re-integrate piece capture animations and move/capture sounds (piece-move.wav, piece-capture.wav) with multiplayer storage updates/events -->
 			</div>

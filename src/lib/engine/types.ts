@@ -40,6 +40,7 @@ export interface RoomStorage {
 	board?: BoardGrid;
 	blackTime?: number;
 	whiteTime?: number;
+	turnStartedAt?: number | null;
 	status?: GameStatus;
 	meta?: Meta;
 	[key: string]: unknown;
