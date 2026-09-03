@@ -240,6 +240,7 @@
 								col={cIndex}
 								isHighlighted={highlighted}
 								piece={cell?.type && cell?.color ? cell : null}
+								onclick={() => handleClickAndMove({ row: rIndex, col: cIndex })}
 							>
 								{#if cell?.type && cell.color}
 									<Piece

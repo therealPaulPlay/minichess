@@ -66,7 +66,7 @@
 			width="32"
 			height={blackPercentage}
 			class="fill-(--chess-piece-light) transition-all duration-300"
-			class:opacity-50={turn === "white"}
+			class:opacity-20={turn === "white"}
 			clip-path="url(#track-clip)"
 		/>
 
@@ -76,7 +76,7 @@
 			width="32"
 			height={whitePercentage}
 			class="fill-(--chess-piece-light) transition-all duration-300"
-			class:opacity-50={turn === "black"}
+			class:opacity-20={turn === "black"}
 			clip-path="url(#track-clip)"
 		/>
 		<path
