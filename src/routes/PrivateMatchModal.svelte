@@ -105,7 +105,7 @@
 					</Button>
 				</div>
 			</div>
-			<div class="relative my-4 flex w-full items-center justify-center">
+			<div class="relative my-8 flex w-full items-center justify-center">
 				<Separator />
 				<span class="bg-background text-muted-foreground absolute px-2 text-xs uppercase"> Or </span>
 			</div>
@@ -116,7 +116,7 @@
 						maxlength={6}
 						bind:value={joinCode}
 						pasteTransformer={(text) => text.trim().toUpperCase()}
-						class="mb-6"
+						class="mb-4"
 					>
 						{#snippet children({ cells })}
 							<InputOTP.Group>

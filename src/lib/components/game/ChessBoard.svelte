@@ -4,20 +4,17 @@
 	import type { Attachment } from "svelte/attachments";
 	import type { PieceColor, Position, RoomStorage } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
-	import PieTimer from "./PieTimer.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
 	import { onMount } from "svelte";
 
-	// TODO: Switch to better timer solution for multiplayer
-	// My idea: We store the timestamps for both black and white when their turn started + ended, and calculate the time left on the client by using the differences
-	// This would be time-zone independent and would only need syncing once each turn
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 	const INITIAL_TIME_MS = 300_000;
 
 	let blackTimeLeft = $state(INITIAL_TIME_MS);
 	let whiteTimeLeft = $state(INITIAL_TIME_MS);
+	let turn: PieceColor = $state("white");
 
 	$effect(() => {
 		const storage = multiplayerState.storage;
@@ -26,6 +23,7 @@
 		// Update base times from server
 		whiteTimeLeft = storage.whiteTime ?? INITIAL_TIME_MS;
 		blackTimeLeft = storage.blackTime ?? INITIAL_TIME_MS;
+		turn = storage.turn || "white";
 
 		// If game is over or clock hasn't started yet, don't run an animation loop
 		if (storage.status?.isGameOver || !storage.turnStartedAt) return;
@@ -259,13 +257,7 @@
 				{/if}
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
-				<TurnIndicator />
-				<div class="absolute top-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "white"}>
-					<PieTimer percentage={blackPercentage} />
-				</div>
-				<div class="absolute bottom-18 scale-60" class:opacity-20={multiplayerState.storage?.turn === "black"}>
-					<PieTimer percentage={whitePercentage} />
-				</div>
+				<TurnIndicator {whitePercentage} {blackPercentage} {turn} />
 				<!-- TODO: Re-integrate piece capture animations and move/capture sounds (piece-move.wav, piece-capture.wav) with multiplayer storage updates/events -->
 			</div>
 		</div>
