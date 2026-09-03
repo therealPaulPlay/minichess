@@ -8,6 +8,7 @@
 	import { pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
 	import { onMount } from "svelte";
+	import { playSound } from "../effects/sounds";
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 	const INITIAL_TIME_MS = 300_000;
@@ -41,7 +42,7 @@
 			} else {
 				blackTimeLeft = Math.max(0, baseBlack - elapsed);
 			}
-		}, 16);
+		}, 50);
 		return () => clearInterval(interval);
 	});
 
@@ -82,6 +83,12 @@
 				try {
 					// TODO: Don't use a request here, insetad append to an array of moves from which we reconstruct the current board
 					await multiplayerState.socket?.sendRequest("move-piece", { currentPos: from, newPos: pos });
+
+					// Piece move/take effects
+					if (board[pos.row][pos.col] !== null) {
+						playSound("capture");
+						// TODO: Animation trigger
+					} else playSound("move");
 				} catch (error) {
 					// TODO: proper user-facing error handling
 					console.error("Error moving piece:", error);
@@ -259,7 +266,6 @@
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
 				<TurnIndicator {whitePercentage} {blackPercentage} {turn} />
-				<!-- TODO: Re-integrate piece capture animations and move/capture sounds (piece-move.wav, piece-capture.wav) with multiplayer storage updates/events -->
 			</div>
 		</div>
 	</div>
