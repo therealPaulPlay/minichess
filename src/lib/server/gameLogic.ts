@@ -94,11 +94,8 @@ export class ChessGame {
 		// Clock
 		if (this.turnStartedAt !== null) {
 			const elapsed = Date.now() - this.turnStartedAt;
-			if (this.turn === "white") {
-				this.whiteTime = Math.max(0, this.whiteTime - elapsed);
-			} else {
-				this.blackTime = Math.max(0, this.blackTime - elapsed);
-			}
+			if (this.turn === "white") this.whiteTime = Math.max(0, this.whiteTime - elapsed);
+			else this.blackTime = Math.max(0, this.blackTime - elapsed);
 		}
 
 		if (this.whiteTime <= 0 || this.blackTime <= 0) {
@@ -150,6 +147,11 @@ export class ChessGame {
 			isStalemate: isStalemate(this.board, this.turn),
 			winner: this.determineWinner(),
 			isGameOver: false,
+			whiteTime: this.whiteTime,
+			blackTime: this.blackTime,
+			turn: this.turn,
+			turnStartedAt: this.turnStartedAt,
+			board: this.board,
 		};
 		status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate;
 		return status;

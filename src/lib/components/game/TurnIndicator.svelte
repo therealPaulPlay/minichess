@@ -8,6 +8,12 @@
 		blackPercentage,
 		turn,
 	}: { whitePercentage: number; blackPercentage: number; turn: PieceColor } = $props();
+
+	const gameStatus = $state(multiplayerState.storage.status);
+
+	const MAX_FILL = 90;
+	const blackY = $derived((blackPercentage / 100) * MAX_FILL);
+	const whiteY = $derived(200 - (whitePercentage / 100) * MAX_FILL);
 </script>
 
 <div class="relative flex h-14 w-8 justify-center p-1">
@@ -33,15 +39,17 @@
                     "
 				/>
 			</clipPath>
+
 			<!-- Inner shadow filter -->
 			<filter id="path-inset-shadow">
 				<feGaussianBlur stdDeviation="1.5" result="offset-blur" />
 				<feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
-				<!-- Shadow opacity -->
 				<feFlood flood-color="black" flood-opacity="0.25" result="color" />
 				<feComposite operator="in" in="color" in2="inverse" result="shadow" />
 			</filter>
 		</defs>
+
+		<!-- Background shape -->
 		<path
 			d="
                 M 8 8 
@@ -60,25 +68,28 @@
             "
 			fill="currentColor"
 		/>
-		<rect
-			x="0"
-			y="0"
-			width="32"
-			height={blackPercentage}
-			class="fill-(--chess-piece-light) transition-all duration-300"
-			class:opacity-20={turn === "white"}
-			clip-path="url(#track-clip)"
-		/>
 
-		<rect
-			x="0"
-			y={200 - whitePercentage}
-			width="32"
-			height={whitePercentage}
-			class="fill-(--chess-piece-light) transition-all duration-300"
-			class:opacity-20={turn === "black"}
-			clip-path="url(#track-clip)"
-		/>
+		<g clip-path="url(#track-clip)">
+			<!-- Black time -->
+			<g class="transition-transform duration-300 ease-out" style="transform: translateY({blackY}px);">
+				<path
+					d="M -36 0 q 3 1.5 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 v -220 h -96 Z"
+					class="wave-black fill-(--chess-piece-light) transition-opacity duration-300"
+					class:opacity-20={turn === "white"}
+				/>
+			</g>
+
+			<!-- White time -->
+			<g class="transition-transform duration-300 ease-out" style="transform: translateY({whiteY}px);">
+				<path
+					d="M -36 0 q 3 -1.5 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 v 220 h -96 Z"
+					class="wave-white fill-(--chess-piece-light) transition-opacity duration-300"
+					class:opacity-20={turn === "black"}
+				/>
+			</g>
+		</g>
+
+		<!-- Inset Shadow Overlay -->
 		<path
 			d="
                 M 8 8 
@@ -100,31 +111,63 @@
 			class="pointer-events-none"
 		/>
 	</svg>
-	<!-- <div class="absolute top-0 h-18 w-8 bg-(--chess-piece-light)"></div> -->
+
+	<!-- Inidcator circle -->
 	<div
 		class="bg-light absolute h-6 w-6 rounded-full shadow-sm inset-shadow-xs inset-shadow-white transition-transform"
-		class:translate-y-6={multiplayerState.storage?.turn === "white"}
-		class:translate-y-0={multiplayerState.storage?.turn === "black"}
+		class:translate-y-6={gameStatus?.turn === "white"}
+		class:translate-y-0={gameStatus?.turn === "black"}
 	></div>
 
 	<div
 		class="absolute top-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-5={multiplayerState.storage?.turn === "white"}
-		class:tilt-n-move-shaking={multiplayerState.storage?.turn === "black" && multiplayerState.storage?.status?.isCheck}
+		class:opacity-5={gameStatus?.turn === "white"}
+		class:tilt-n-move-shaking={gameStatus?.turn === "black" && gameStatus?.isCheck}
 	>
-		<KingIcon class=" rotate-180 text-black" />
+		<KingIcon class="rotate-180 text-black" />
 	</div>
 
 	<div
 		class="absolute bottom-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-30={multiplayerState.storage?.turn === "black"}
-		class:tilt-n-move-shaking={multiplayerState.storage?.turn === "white" && multiplayerState.storage?.status?.isCheck}
+		class:opacity-30={gameStatus?.turn === "black"}
+		class:tilt-n-move-shaking={gameStatus?.turn === "white" && gameStatus?.isCheck}
 	>
-		<KingIcon class="text-(--chess-piece-light) " />
+		<KingIcon class="text-(--chess-piece-light)" />
 	</div>
 </div>
 
 <style>
+	.wave-black,
+	.wave-white {
+		transform-box: view-box;
+	}
+
+	.wave-black {
+		animation: wave-slide 2.5s linear infinite;
+	}
+
+	.wave-white {
+		animation: wave-slide-reverse 3s linear infinite;
+	}
+
+	@keyframes wave-slide {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(-12px);
+		}
+	}
+
+	@keyframes wave-slide-reverse {
+		from {
+			transform: translateX(-12px);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+
 	.tilt-n-move-shaking {
 		animation: tilt-n-move-shaking 0.25s ease-in infinite;
 	}

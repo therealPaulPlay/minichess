@@ -2,12 +2,11 @@
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { PieceColor, Position, RoomStorage } from "$lib/engine/types";
+	import type { PieceColor, Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
-	import { onMount } from "svelte";
 	import { playSound } from "../effects/sounds";
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
@@ -18,21 +17,21 @@
 	let turn: PieceColor = $state("white");
 
 	$effect(() => {
-		const storage = multiplayerState.storage;
-		if (!storage) return;
+		const status = multiplayerState.storage.status;
+		if (!status) return;
 
 		// Update base times from server
-		whiteTimeLeft = storage.whiteTime ?? INITIAL_TIME_MS;
-		blackTimeLeft = storage.blackTime ?? INITIAL_TIME_MS;
-		turn = storage.turn || "white";
+		whiteTimeLeft = status.whiteTime ?? INITIAL_TIME_MS;
+		blackTimeLeft = status.blackTime ?? INITIAL_TIME_MS;
+		turn = status.turn || "white";
 
 		// If game is over or clock hasn't started yet, don't run an animation loop
-		if (storage.status?.isGameOver || !storage.turnStartedAt) return;
+		if (status?.isGameOver || !status.turnStartedAt) return;
 
-		const baseWhite = storage.whiteTime ?? INITIAL_TIME_MS;
-		const baseBlack = storage.blackTime ?? INITIAL_TIME_MS;
-		const startedAt = storage.turnStartedAt;
-		const activeTurn = storage.turn;
+		const baseWhite = status.whiteTime ?? INITIAL_TIME_MS;
+		const baseBlack = status.blackTime ?? INITIAL_TIME_MS;
+		const startedAt = status.turnStartedAt;
+		const activeTurn = status.turn;
 
 		// Update the active clock
 		const interval = setInterval(() => {
@@ -49,30 +48,35 @@
 	const whitePercentage = $derived((whiteTimeLeft / INITIAL_TIME_MS) * 100);
 	const blackPercentage = $derived((blackTimeLeft / INITIAL_TIME_MS) * 100);
 
-	let canPlay = $state(true);
-
-	multiplayerState.socket?.onEvent("storageUpdated", (storage: RoomStorage) => {
-		multiplayerState.storage = storage;
+	const canPlay = $derived.by(() => {
 		const userId = multiplayerState.socket?.id;
-		const activePlayer = storage?.turn === "white" ? storage?.meta?.whiteId : storage?.meta?.blackId;
+		const storage = multiplayerState.storage;
+		if (!storage || !userId) return false;
 
-		canPlay = activePlayer === userId;
+		const activePlayer = storage.status?.turn === "white" ? storage.meta?.whiteId : storage.meta?.blackId;
+
+		return activePlayer === userId;
 	});
 
 	// Current selected position & valid moves for that position
 	let selectedPos: Position | null = $state(null);
 	const validMoves = $derived(
-		multiplayerState.storage?.board && selectedPos ? getLegalMoves(multiplayerState.storage?.board, selectedPos) : [],
+		multiplayerState.storage.status?.board && selectedPos
+			? getLegalMoves(multiplayerState.storage.status.board, selectedPos)
+			: [],
 	);
 
 	async function handleClickAndMove(pos: Position) {
-		const board = multiplayerState.storage?.board;
+		const gameStatus = multiplayerState.storage.status;
+		if (!gameStatus) return;
+
+		const board = gameStatus.board;
 		if (!board) return console.warn("Board not loaded.");
 
 		if (!canPlay) return;
 
 		const clickedPiece = board[pos.row]?.[pos.col];
-		if (clickedPiece?.color === multiplayerState.storage?.turn) return (selectedPos = pos);
+		if (clickedPiece?.color === gameStatus.turn) return (selectedPos = pos);
 
 		// Anything else is a move target for the current selection, empty squares included
 		if (selectedPos) {
@@ -103,7 +107,7 @@
 	// Most of this code is for the drag-and-drop effect
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
 		return (node) => {
-			const board = multiplayerState.storage?.board;
+			const board = multiplayerState.storage.status?.board;
 			if (!board) return () => {};
 
 			const clickedPieceColor = board[row]?.[col]?.color;
@@ -172,13 +176,11 @@
 			// Click
 			function onPointerDown(e: PointerEvent) {
 				if (e.button !== 0 && e.pointerType === "mouse") return;
+				const gameStatus = multiplayerState.storage.status;
+				if (!gameStatus) return;
 
 				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
-				if (
-					!multiplayerState.storage?.board ||
-					pieceAt(multiplayerState.storage.board, { row, col })?.color !== multiplayerState.storage?.turn
-				)
-					return;
+				if (!gameStatus.board || pieceAt(gameStatus.board, { row, col })?.color !== gameStatus.turn) return;
 
 				startX = e.clientX;
 				startY = e.clientY;
@@ -216,25 +218,14 @@
 	function userColor(): PieceColor {
 		return multiplayerState.storage.meta?.whiteId === multiplayerState.socket?.id ? "white" : "black";
 	}
-
-	onMount(() => {
-		const storage = multiplayerState.storage;
-		const userId = multiplayerState.socket?.id;
-		const currentTurn = storage?.turn;
-		const whiteId = storage?.meta?.whiteId;
-		const blackId = storage?.meta?.blackId;
-
-		const activePlayer = currentTurn === "white" ? whiteId : blackId;
-		canPlay = activePlayer === userId;
-	});
 </script>
 
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
-				{#if multiplayerState.storage?.board}
-					{#each multiplayerState.storage.board as row, rIndex}
+				{#if multiplayerState.storage.status?.board}
+					{#each multiplayerState.storage.status.board as row, rIndex}
 						{#each row as cell, cIndex}
 							{const col = $derived(String.fromCharCode(97 + cIndex))}
 							{const rowLabel = $derived(5 - Math.floor(rIndex))}

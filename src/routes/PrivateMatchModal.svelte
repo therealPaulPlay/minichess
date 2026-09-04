@@ -20,7 +20,7 @@
 	let creatingRoom = $state(false);
 
 	async function createRoom() {
-		if (multiplayerState.socket?.id !== null) multiplayerState.socket?.destroy();
+		multiplayerState.socket?.destroy();
 		try {
 			creatingRoom = true;
 			multiplayerState.socket = new PlaySocket(null, {
@@ -79,8 +79,8 @@
 			);
 
 			goto("/play");
-		} catch (e) {
-			console.log(e);
+		} catch (error) {
+			console.log(error);
 		}
 	}
 </script>

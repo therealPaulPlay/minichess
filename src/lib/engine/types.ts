@@ -24,8 +24,14 @@ export interface GameStatus {
 	isTimeout: boolean;
 	isCheckmate: boolean;
 	isStalemate: boolean;
-	winner: PieceColor | "draw" | null;
 	isGameOver: boolean;
+	winner: PieceColor | "draw" | null;
+
+	turn: PieceColor;
+	board: BoardGrid;
+	blackTime: number;
+	whiteTime: number;
+	turnStartedAt: number | null;
 }
 
 export interface Meta {
@@ -36,11 +42,6 @@ export interface Meta {
 }
 
 export interface RoomStorage {
-	turn?: PieceColor;
-	board?: BoardGrid;
-	blackTime?: number;
-	whiteTime?: number;
-	turnStartedAt?: number | null;
 	status?: GameStatus;
 	meta?: Meta;
 	[key: string]: unknown;

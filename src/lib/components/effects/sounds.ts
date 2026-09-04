@@ -31,7 +31,7 @@ export function playSound(name: SoundName, volume = 1) {
 	// cloneNode allows the sound to overlap with itself during rapid clicks
 	const clone = cached.cloneNode() as HTMLAudioElement;
 	clone.volume = Math.min(Math.max(volume, 0), 1);
-	clone.play().catch((err) => {
-		console.warn(`Could not play sound "${name}":`, err);
+	clone.play().catch((error) => {
+		console.warn(`Could not play sound "${name}":`, error);
 	});
 }

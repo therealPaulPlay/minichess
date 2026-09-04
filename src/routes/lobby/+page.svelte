@@ -34,8 +34,8 @@
 			timeoutId = setTimeout(() => {
 				copied = false;
 			}, 2000);
-		} catch (err) {
-			console.error("Failed to copy:", err);
+		} catch (error) {
+			console.error("Failed to copy:", error);
 		}
 	}
 </script>

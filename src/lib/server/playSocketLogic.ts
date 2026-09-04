@@ -2,7 +2,7 @@ import PlaySocketServer from "playsocketjs/server";
 import { createServer } from "node:http";
 import { getClientIp } from "./clientIp.ts";
 import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
-import { ChessGame, initialBoard } from "./gameLogic.ts";
+import { ChessGame } from "./gameLogic.ts";
 
 import type { IncomingMessage } from "node:http";
 
@@ -27,14 +27,8 @@ const server = new PlaySocketServer({
 const chessGameInstances = new Map<string, ChessGame>(); // Room ID -> chess game instance
 
 server.onEvent("roomCreationRequested", () => {
-	const starter = new ChessGame();
 	return {
-		turn: "white",
-		board: initialBoard,
-		blackTime: starter.blackTime,
-		whiteTime: starter.whiteTime,
-		turnStartedAt: null,
-		status: starter.status,
+		status: new ChessGame().status,
 	};
 });
 
@@ -42,9 +36,6 @@ server.onEvent("roomCreated", (roomId: string) => {
 	const chessGame = new ChessGame();
 
 	chessGame.onTimeout = () => {
-		server.updateRoomStorage(roomId, "whiteTime", "set", chessGame.whiteTime);
-		server.updateRoomStorage(roomId, "blackTime", "set", chessGame.blackTime);
-		server.updateRoomStorage(roomId, "turnStartedAt", "set", null);
 		server.updateRoomStorage(roomId, "status", "set", chessGame.status);
 	};
 
@@ -75,13 +66,8 @@ server.onEvent(
 
 			// If the move was allowed, toggle who's turn it is
 			if (allowed === true) {
-				const turn = chessGame.changeTurn();
-				server.updateRoomStorage(roomId, "turn", "set", turn);
-				server.updateRoomStorage(roomId, "board", "set", chessGame.board);
+				chessGame.changeTurn();
 				server.updateRoomStorage(roomId, "status", "set", chessGame.status);
-				server.updateRoomStorage(roomId, "whiteTime", "set", chessGame.whiteTime);
-				server.updateRoomStorage(roomId, "blackTime", "set", chessGame.blackTime);
-				server.updateRoomStorage(roomId, "turnStartedAt", "set", chessGame.turnStartedAt);
 			}
 			return allowed; // False if not allowed -> blocks the update and reverts
 		}
