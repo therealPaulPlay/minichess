@@ -2,7 +2,7 @@
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { PieceColor, Position } from "$lib/engine/types";
+	import type { BoardGrid, PieceColor, Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { pieceAt } from "$lib/engine/helpers";
@@ -15,6 +15,9 @@
 	let blackTimeLeft = $state(INITIAL_TIME_MS);
 	let whiteTimeLeft = $state(INITIAL_TIME_MS);
 	let turn: PieceColor = $state("white");
+
+	let captureTriggers = $state<Record<string, number>>({});
+	let prevBoard: BoardGrid | null = null;
 
 	$effect(() => {
 		const status = multiplayerState.storage.status;
@@ -43,6 +46,27 @@
 			}
 		}, 50);
 		return () => clearInterval(interval);
+	});
+
+	$effect(() => {
+		const currentBoard = multiplayerState.storage.status?.board;
+		if (!currentBoard) return;
+		if (prevBoard) {
+			for (let r = 0; r < 5; r++) {
+				for (let c = 0; c < 5; c++) {
+					const prev = prevBoard[r][c];
+					const curr = currentBoard[r][c];
+					// If a square had a piece, and now has a DIFFERENT color piece, a capture occurred at (r, c)
+					if (prev && curr && prev.color !== curr.color) {
+						const square = `${String.fromCharCode(97 + c)}${5 - r}`;
+						captureTriggers[square] = (captureTriggers[square] || 0) + 1;
+						playSound("capture");
+					}
+				}
+			}
+		}
+		// TODO: Yeah, we really need to switch to a move array instead of comparing boards
+		prevBoard = currentBoard.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
 	});
 
 	const whitePercentage = $derived((whiteTimeLeft / INITIAL_TIME_MS) * 100);
@@ -245,6 +269,7 @@
 										type={cell.type}
 										color={cell.color}
 										draggable={cell.color === userColor()}
+										triggerEffect={captureTriggers[square] || 0}
 										{@attach draggable(rIndex, cIndex)}
 									/>
 								{/if}

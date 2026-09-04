@@ -9,7 +9,7 @@
 	import KingIcon from "$lib/components/chess-pieces/KingIcon.svelte";
 	import type { HTMLAttributes } from "svelte/elements";
 	import type { Component } from "svelte";
-	import Streamer from "$lib/components/effects/Streamer.svelte";
+	import ImpactDust from "$lib/components/effects/ImpactDust.svelte";
 
 	let {
 		type,
@@ -24,7 +24,6 @@
 		draggable?: boolean;
 		class?: string;
 		triggerEffect?: number;
-		streamerCount?: number;
 	} & HTMLAttributes<HTMLDivElement> = $props();
 
 	const iconMap: Record<PieceType, Component> = {
@@ -50,18 +49,15 @@
 	{#if Icon}
 		<Icon class="my-2 h-full w-full overflow-visible p-3 {draggable ? 'hover:cursor-grab' : ''}" />
 	{/if}
-	<!-- Streamers Overlay -->
-	<!-- TODO: Re-wire capture effect animation / triggers with multiplayer game state -->
-	<div class="pointer-events-none absolute inset-0 -top-6 flex items-center justify-center">
+
+	<!-- Impact dust -->
+	<div class="pointer-events-none absolute bottom-3 flex items-center justify-center">
 		<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
-		<div class="rotate-180">
-			<Streamer trigger={triggerEffect} {color} />
+		<div class="-scale-x-100">
+			<ImpactDust trigger={triggerEffect} {color} />
 		</div>
-		<div class="-translate-y-3 rotate-255">
-			<Streamer trigger={triggerEffect} {color} />
-		</div>
-		<div class="-rotate-90">
-			<Streamer trigger={triggerEffect} {color} />
+		<div class="">
+			<ImpactDust trigger={triggerEffect} {color} />
 		</div>
 	</div>
 </div>
