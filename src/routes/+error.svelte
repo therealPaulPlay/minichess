@@ -32,7 +32,6 @@
 
 <style>
 	.soft-fade-mask {
-		/* Soft fade-in on the left 48px, solid everywhere else */
 		-webkit-mask-image: linear-gradient(to right, transparent 0px, black 48px, black 100%);
 		mask-image: linear-gradient(to right, transparent 0px, black 48px, black 100%);
 	}
