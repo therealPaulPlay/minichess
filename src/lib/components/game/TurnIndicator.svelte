@@ -9,7 +9,7 @@
 		turn,
 	}: { whitePercentage: number; blackPercentage: number; turn: PieceColor } = $props();
 
-	const gameStatus = $state(multiplayerState.storage.status);
+	const inCheck = $derived(multiplayerState.storage.status?.isCheck);
 
 	const MAX_FILL = 90;
 	const blackY = $derived((blackPercentage / 100) * MAX_FILL);
@@ -115,22 +115,22 @@
 	<!-- Inidcator circle -->
 	<div
 		class="bg-light absolute h-6 w-6 rounded-full shadow-sm inset-shadow-xs inset-shadow-white transition-transform"
-		class:translate-y-6={gameStatus?.turn === "white"}
-		class:translate-y-0={gameStatus?.turn === "black"}
+		class:translate-y-6={turn === "white"}
+		class:translate-y-0={turn === "black"}
 	></div>
 
 	<div
 		class="absolute top-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-5={gameStatus?.turn === "white"}
-		class:tilt-n-move-shaking={gameStatus?.turn === "black" && gameStatus?.isCheck}
+		class:opacity-5={turn === "white"}
+		class:tilt-n-move-shaking={turn === "black" && inCheck}
 	>
 		<KingIcon class="rotate-180 text-black" />
 	</div>
 
 	<div
 		class="absolute bottom-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-30={gameStatus?.turn === "black"}
-		class:tilt-n-move-shaking={gameStatus?.turn === "white" && gameStatus?.isCheck}
+		class:opacity-30={turn === "black"}
+		class:tilt-n-move-shaking={turn === "white" && inCheck}
 	>
 		<KingIcon class="text-(--chess-piece-light)" />
 	</div>
