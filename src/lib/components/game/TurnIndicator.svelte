@@ -7,7 +7,8 @@
 		whitePercentage,
 		blackPercentage,
 		turn,
-	}: { whitePercentage: number; blackPercentage: number; turn: PieceColor } = $props();
+		sideIndicator,
+	}: { whitePercentage: number; blackPercentage: number; turn: PieceColor; sideIndicator: PieceColor } = $props();
 
 	const inCheck = $derived(multiplayerState.storage.status?.isCheck);
 
@@ -134,6 +135,13 @@
 	>
 		<KingIcon class="text-(--chess-piece-light)" />
 	</div>
+
+	<div
+		class="bg-dark absolute -right-4 flex h-2 w-2 items-center justify-center rounded-full p-1 transition-opacity"
+		class:top-3={sideIndicator === "black"}
+		class:bottom-3={sideIndicator === "white"}
+		class:opacity-30={turn !== sideIndicator}
+	></div>
 </div>
 
 <style>

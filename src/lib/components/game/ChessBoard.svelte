@@ -282,7 +282,7 @@
 				{/if}
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
-				<TurnIndicator {whitePercentage} {blackPercentage} {turn} />
+				<TurnIndicator {whitePercentage} {blackPercentage} {turn} sideIndicator={userColor()} />
 			</div>
 		</div>
 	</div>
