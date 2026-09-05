@@ -271,6 +271,7 @@
 										draggable={cell.color === userColor()}
 										triggerEffect={captureTriggers[square] || 0}
 										{@attach draggable(rIndex, cIndex)}
+										isUnderAttack={validMoves.some((m) => m.row === rIndex && m.col === cIndex)}
 									/>
 								{/if}
 							</Square>

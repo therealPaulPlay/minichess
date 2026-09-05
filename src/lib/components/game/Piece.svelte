@@ -17,6 +17,7 @@
 		draggable = false,
 		class: className = "",
 		triggerEffect = 0,
+		isUnderAttack = false,
 		...props
 	}: {
 		type: PieceType;
@@ -24,6 +25,7 @@
 		draggable?: boolean;
 		class?: string;
 		triggerEffect?: number;
+		isUnderAttack?: boolean;
 	} & HTMLAttributes<HTMLDivElement> = $props();
 
 	const iconMap: Record<PieceType, Component> = {
@@ -44,6 +46,7 @@
 		color === "white" ? "text-(--chess-piece-light)" : "text-black",
 		className,
 	]}
+	class:tilt-n-move-shaking={isUnderAttack}
 	{...props}
 >
 	{#if Icon}
@@ -61,3 +64,27 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.tilt-n-move-shaking {
+		animation: tilt-n-move-shaking 0.25s ease-in infinite;
+	}
+
+	@keyframes tilt-n-move-shaking {
+		0% {
+			transform: translate(0, 0) rotate(0deg);
+		}
+		25% {
+			transform: translate(1px, 1px) rotate(3deg);
+		}
+		50% {
+			transform: translate(0, 0) rotate(0deg);
+		}
+		75% {
+			transform: translate(-1px, 1px) rotate(-3deg);
+		}
+		100% {
+			transform: translate(0, 0) rotate(0deg);
+		}
+	}
+</style>
