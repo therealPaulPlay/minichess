@@ -2,9 +2,11 @@ import PlaySocketServer from "playsocketjs/server";
 import { createServer } from "node:http";
 import { getClientIp } from "./clientIp.ts";
 import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
-import { ChessGame } from "./gameLogic.ts";
+import { ChessGame, initialBoard } from "./gameLogic.ts";
 
 import type { IncomingMessage } from "node:http";
+import type { RoomStorage } from "../engine/types.ts";
+import { parseMoveString } from "../engine/helpers.ts";
 
 const PORT = 3000;
 
@@ -26,13 +28,24 @@ const server = new PlaySocketServer({
 
 const chessGameInstances = new Map<string, ChessGame>(); // Room ID -> chess game instance
 
-server.onEvent("roomCreationRequested", () => {
+server.onEvent("roomCreationRequested", ({ clientId, initialStorage }) => {
+	const isWhite = Math.random() > 0.5;
+
 	return {
+		...initialStorage,
+		meta: {
+			...initialStorage?.meta,
+			initialBoard,
+			whiteId: isWhite ? clientId : undefined,
+			blackId: isWhite ? undefined : clientId,
+		},
 		status: new ChessGame().status,
-	};
+		moveHistory: [],
+	} satisfies RoomStorage;
 });
 
 server.onEvent("roomCreated", (roomId: string) => {
+	server.updateRoomStorage(roomId, "meta", "object-set-key", "roomId", roomId);
 	const chessGame = new ChessGame();
 
 	chessGame.onTimeout = () => {
@@ -47,39 +60,32 @@ server.onEvent("roomDestroyed", (roomId: string) => {
 	chessGameInstances.delete(roomId);
 });
 
-interface MovePieceData {
-	currentPos: { row: number; col: number };
-	newPos: { row: number; col: number };
-}
+server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage }) => {
+	const { key, type, value } = server.getUpdateDetails(update);
 
-server.onEvent(
-	"requestReceived",
-	({ roomId, name, data }: { clientId: string; roomId: string | null; name: string; data: unknown }) => {
-		if (name === "move-piece") {
-			const moveData = data as MovePieceData | undefined;
-			if (!roomId || !moveData?.currentPos || !moveData?.newPos) return;
-			const roomStorage = server.getRoomStorage(roomId);
-			const chessGame = chessGameInstances.get(roomId);
-			if (!roomStorage || !chessGame) return false;
-			// TODO: Validate piece color at currentPos matches that client's assigned color, otherwise reject
-			const allowed = chessGame.move(moveData.currentPos, moveData.newPos);
+	if (key === "moveHistory") {
+		if (type !== "array-add") return "Invalid operation";
+		if (typeof value !== "string") return "Invalid move type";
 
-			// If the move was allowed, toggle who's turn it is
-			if (allowed === true) {
-				chessGame.changeTurn();
-				server.updateRoomStorage(roomId, "status", "set", chessGame.status);
-			}
-			return allowed; // False if not allowed -> blocks the update and reverts
-		}
-	},
-);
+		const chessGame = chessGameInstances.get(roomId);
+		if (!chessGame) return "Game not found";
 
-server.onEvent("storageUpdateRequested", () => {
-	// TODO only allow expliclty user-updatable keys & handle validation
+		const playerColor =
+			storage?.meta?.whiteId === clientId ? "white" : storage?.meta?.blackId === clientId ? "black" : null;
+		if (playerColor !== chessGame.turn) return "Not player's turn";
+
+		const move = parseMoveString(value);
+
+		const allowed = chessGame.move(move.from, move.to);
+		if (allowed !== true) return allowed;
+
+		chessGame.changeTurn();
+		server.updateRoomStorage(roomId, "status", "set", chessGame.status);
+	}
 });
 
 // Start and clean exit -----------------------------------------------------------------
-httpServer.listen(PORT, () => console.log(`Listening on port ${PORT}.`));
+httpServer.listen(PORT, "0.0.0.0", () => console.log(`Listening on port ${PORT}.`));
 
 function shutdown() {
 	server.stop();

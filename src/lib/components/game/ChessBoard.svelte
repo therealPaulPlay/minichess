@@ -5,7 +5,7 @@
 	import type { BoardGrid, PieceColor, Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
-	import { pieceAt } from "$lib/engine/helpers";
+	import { applyMove, formatMoveString, parseMoveString, pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
 	import { playSound } from "../effects/sounds";
 
@@ -17,7 +17,39 @@
 	let turn: PieceColor = $state("white");
 
 	let captureTriggers = $state<Record<string, number>>({});
-	let prevBoard: BoardGrid | null = null;
+	let localBoard = $state<BoardGrid | null>(null);
+	let localMoves: string[] = [];
+
+	$effect(() => {
+		const initial = multiplayerState.storage.meta?.initialBoard;
+		if (!initial) return;
+
+		const serverMoves = multiplayerState.storage.moveHistory || [];
+
+		const hasDiverged = localMoves.length > serverMoves.length || localMoves.some((move, i) => move !== serverMoves[i]);
+		if (hasDiverged || !localBoard) {
+			localBoard = $state.snapshot(initial);
+			localMoves = [];
+		}
+
+		const newMoves = serverMoves.slice(localMoves.length);
+
+		for (const moveStr of newMoves) {
+			const move = parseMoveString(moveStr);
+
+			const pieceAtTarget = pieceAt(localBoard, move.to);
+			if (pieceAtTarget) {
+				const square = `${String.fromCharCode(97 + move.to.col)}${5 - move.to.row}`;
+				captureTriggers[square] = (captureTriggers[square] || 0) + 1; // triggers ImpactDust
+				playSound("capture");
+			} else {
+				playSound("move");
+			}
+
+			applyMove(localBoard, move);
+			localMoves.push(moveStr);
+		}
+	});
 
 	$effect(() => {
 		const status = multiplayerState.storage.status;
@@ -48,27 +80,6 @@
 		return () => clearInterval(interval);
 	});
 
-	$effect(() => {
-		const currentBoard = multiplayerState.storage.status?.board;
-		if (!currentBoard) return;
-		if (prevBoard) {
-			for (let r = 0; r < 5; r++) {
-				for (let c = 0; c < 5; c++) {
-					const prev = prevBoard[r][c];
-					const curr = currentBoard[r][c];
-					// If a square had a piece, and now has a DIFFERENT color piece, a capture occurred at (r, c)
-					if (prev && curr && prev.color !== curr.color) {
-						const square = `${String.fromCharCode(97 + c)}${5 - r}`;
-						captureTriggers[square] = (captureTriggers[square] || 0) + 1;
-						playSound("capture");
-					}
-				}
-			}
-		}
-		// TODO: Yeah, we really need to switch to a move array instead of comparing boards
-		prevBoard = currentBoard.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
-	});
-
 	const whitePercentage = $derived((whiteTimeLeft / INITIAL_TIME_MS) * 100);
 	const blackPercentage = $derived((blackTimeLeft / INITIAL_TIME_MS) * 100);
 
@@ -84,22 +95,17 @@
 
 	// Current selected position & valid moves for that position
 	let selectedPos: Position | null = $state(null);
-	const validMoves = $derived(
-		multiplayerState.storage.status?.board && selectedPos
-			? getLegalMoves(multiplayerState.storage.status.board, selectedPos)
-			: [],
-	);
+	const validMoves = $derived(localBoard && selectedPos ? getLegalMoves(localBoard, selectedPos) : []);
 
 	async function handleClickAndMove(pos: Position) {
 		const gameStatus = multiplayerState.storage.status;
 		if (!gameStatus) return;
 
-		const board = gameStatus.board;
-		if (!board) return console.warn("Board not loaded.");
+		if (!localBoard) return console.warn("Board not loaded.");
 
 		if (!canPlay) return;
 
-		const clickedPiece = board[pos.row]?.[pos.col];
+		const clickedPiece = localBoard[pos.row]?.[pos.col];
 		if (clickedPiece?.color === gameStatus.turn) return (selectedPos = pos);
 
 		// Anything else is a move target for the current selection, empty squares included
@@ -109,14 +115,8 @@
 				const from = selectedPos;
 				selectedPos = null; // Deselect before the request
 				try {
-					// TODO: Don't use a request here, insetad append to an array of moves from which we reconstruct the current board
-					await multiplayerState.socket?.sendRequest("move-piece", { currentPos: from, newPos: pos });
-
-					// Piece move/take effects
-					if (board[pos.row][pos.col] !== null) {
-						playSound("capture");
-						// TODO: Animation trigger
-					} else playSound("move");
+					const moveString = formatMoveString(from, pos);
+					multiplayerState.socket?.updateStorage("moveHistory", "array-add", moveString);
 				} catch (error) {
 					// TODO: proper user-facing error handling
 					console.error("Error moving piece:", error);
@@ -131,10 +131,9 @@
 	// Most of this code is for the drag-and-drop effect
 	function draggable(row: number, col: number): Attachment<HTMLElement> {
 		return (node) => {
-			const board = multiplayerState.storage.status?.board;
-			if (!board) return () => {};
+			if (!localBoard) return () => {};
 
-			const clickedPieceColor = board[row]?.[col]?.color;
+			const clickedPieceColor = localBoard[row]?.[col]?.color;
 			if (clickedPieceColor !== userColor()) return () => {};
 
 			node.addEventListener("dragstart", (e) => e.preventDefault());
@@ -204,7 +203,7 @@
 				if (!gameStatus) return;
 
 				// Can't drag the opponent's piece (for now, user should be only able to drag his pieces regardless of turn)
-				if (!gameStatus.board || pieceAt(gameStatus.board, { row, col })?.color !== gameStatus.turn) return;
+				if (!localBoard || pieceAt(localBoard, { row, col })?.color !== gameStatus.turn) return;
 
 				startX = e.clientX;
 				startY = e.clientY;
@@ -248,8 +247,8 @@
 	<div class="relative flex flex-col rounded-2xl bg-white p-8">
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
-				{#if multiplayerState.storage.status?.board}
-					{#each multiplayerState.storage.status.board as row, rIndex}
+				{#if localBoard}
+					{#each localBoard as row, rIndex}
 						{#each row as cell, cIndex}
 							{const col = $derived(String.fromCharCode(97 + cIndex))}
 							{const rowLabel = $derived(5 - Math.floor(rIndex))}

@@ -9,7 +9,7 @@
 	//       and then we take them to the /play game
 	let copied = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout>;
-	let roomCode = $state(multiplayerState.storage.meta?.roomId);
+	let roomCode = $derived(multiplayerState.storage.meta?.roomId);
 
 	multiplayerState.socket?.onEvent("clientJoined", () => {
 		if (multiplayerState.socket?.isHost) {

@@ -17,6 +17,7 @@ export interface Position {
 export interface Move {
 	from: Position;
 	to: Position;
+	promotion?: PieceType;
 }
 
 export interface GameStatus {
@@ -28,7 +29,6 @@ export interface GameStatus {
 	winner: PieceColor | "draw" | null;
 
 	turn: PieceColor;
-	board: BoardGrid;
 	blackTime: number;
 	whiteTime: number;
 	turnStartedAt: number | null;
@@ -39,10 +39,12 @@ export interface Meta {
 	roomId?: string;
 	whiteId?: string;
 	blackId?: string;
+	initialBoard?: BoardGrid;
 }
 
 export interface RoomStorage {
 	status?: GameStatus;
 	meta?: Meta;
+	moveHistory?: string[];
 	[key: string]: unknown;
 }

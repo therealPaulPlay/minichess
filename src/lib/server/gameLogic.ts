@@ -151,7 +151,6 @@ export class ChessGame {
 			blackTime: this.blackTime,
 			turn: this.turn,
 			turnStartedAt: this.turnStartedAt,
-			board: this.board,
 		};
 		status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate;
 		return status;

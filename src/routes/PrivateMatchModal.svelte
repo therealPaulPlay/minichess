@@ -24,7 +24,7 @@
 		try {
 			creatingRoom = true;
 			multiplayerState.socket = new PlaySocket(null, {
-				endpoint: "ws://localhost:3000/socket",
+				endpoint: `ws://${window.location.host}/socket`,
 			});
 
 			multiplayerState.socket.onEvent("status", (status) => console.log(status));
@@ -33,21 +33,14 @@
 			});
 
 			await multiplayerState.socket.init();
-			const roomId = await multiplayerState.socket.createRoom({ meta: { isPrivate: true } } satisfies RoomStorage);
+			await multiplayerState.socket.createRoom({ meta: { isPrivate: true } } satisfies RoomStorage);
 
-			multiplayerState.socket.updateStorage("meta", "object-set-key", "roomId", roomId);
-			// Assigns the side at lobby creation
-			multiplayerState.socket.updateStorage(
-				"meta",
-				"object-set-key",
-				Math.random() > 0.5 ? "whiteId" : "blackId",
-				multiplayerState.socket.id,
-			);
 			await new Promise((res) => setTimeout(res, 1000)); // Simulated delay, TODO remove
 			creatingRoom = false;
 			goto("/lobby");
 		} catch (error) {
 			console.log(error);
+			alert(`Error creating room: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
 			creatingRoom = false;
 		}
 	}
@@ -57,7 +50,7 @@
 		try {
 			if (!multiplayerState.socket?.id) {
 				multiplayerState.socket = new PlaySocket(null, {
-					endpoint: "ws://localhost:3000/socket",
+					endpoint: `ws://${window.location.host}/socket`,
 				});
 				await multiplayerState.socket.init();
 			}
@@ -116,6 +109,8 @@
 						maxlength={6}
 						bind:value={joinCode}
 						pasteTransformer={(text) => text.trim().toUpperCase()}
+						inputmode="text"
+						autocapitalize="characters"
 						class="mb-4"
 					>
 						{#snippet children({ cells })}
