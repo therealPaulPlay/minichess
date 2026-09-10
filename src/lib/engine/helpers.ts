@@ -4,14 +4,6 @@ export function pieceAt(board: BoardGrid, pos: Position): Piece | null {
 	return board[pos.row][pos.col];
 }
 
-export function parseMoveString(moveStr: string): Move {
-	return {
-		from: { row: Number(moveStr[0]), col: Number(moveStr[1]) },
-		to: { row: Number(moveStr[2]), col: Number(moveStr[3]) },
-		promotion: (moveStr[4] as PieceType) || undefined,
-	};
-}
-
 export function formatMoveString(from: Position, to: Position, promotion?: PieceType): string {
 	return `${from.row}${from.col}${to.row}${to.col}${promotion ?? ""}`;
 }
@@ -26,10 +18,15 @@ export function applyMove(board: BoardGrid, move: Move): void {
 	board[move.from.row][move.from.col] = null;
 }
 
-export function createBoardFromMoves(startingBoard: BoardGrid, moves: string[] = []): BoardGrid {
-	const board = structuredClone(startingBoard);
-	for (const moveStr of moves) {
-		applyMove(board, parseMoveString(moveStr));
+export function cloneBoard(board: BoardGrid): BoardGrid {
+	if (!board) return [];
+	return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
+}
+export function createBoardFromMoves(startingBoard: BoardGrid, moves: Move[] = []): BoardGrid {
+	if (!startingBoard) return [];
+	const board = cloneBoard(startingBoard);
+	for (const move of moves) {
+		applyMove(board, move);
 	}
 	return board;
 }

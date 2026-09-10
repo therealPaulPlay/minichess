@@ -5,8 +5,7 @@ import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
 import { ChessGame, initialBoard } from "./gameLogic.ts";
 
 import type { IncomingMessage } from "node:http";
-import type { RoomStorage } from "../engine/types.ts";
-import { parseMoveString } from "../engine/helpers.ts";
+import type { Move, RoomStorage } from "../engine/types.ts";
 
 const PORT = 3000;
 
@@ -65,7 +64,9 @@ server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage })
 
 	if (key === "moveHistory") {
 		if (type !== "array-add") return "Invalid operation";
-		if (typeof value !== "string") return "Invalid move type";
+
+		const move = value as Move;
+		if (!move?.from || !move?.to) return "Invalid move type";
 
 		const chessGame = chessGameInstances.get(roomId);
 		if (!chessGame) return "Game not found";
@@ -73,8 +74,6 @@ server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage })
 		const playerColor =
 			storage?.meta?.whiteId === clientId ? "white" : storage?.meta?.blackId === clientId ? "black" : null;
 		if (playerColor !== chessGame.turn) return "Not player's turn";
-
-		const move = parseMoveString(value);
 
 		const allowed = chessGame.move(move.from, move.to);
 		if (allowed !== true) return allowed;

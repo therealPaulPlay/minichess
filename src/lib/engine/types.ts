@@ -14,6 +14,11 @@ export interface Position {
 	col: number; // or should make it a string? Or will the combination of both cause a headache?
 }
 
+export interface PieceOnBoard {
+	piece: Piece;
+	pos: Position;
+}
+
 export interface Move {
 	from: Position;
 	to: Position;
@@ -26,6 +31,7 @@ export interface GameStatus {
 	isCheckmate: boolean;
 	isStalemate: boolean;
 	isGameOver: boolean;
+	isInsufficientMaterial: boolean;
 	winner: PieceColor | "draw" | null;
 
 	turn: PieceColor;
@@ -45,6 +51,6 @@ export interface Meta {
 export interface RoomStorage {
 	status?: GameStatus;
 	meta?: Meta;
-	moveHistory?: string[];
+	moveHistory?: Move[];
 	[key: string]: unknown;
 }

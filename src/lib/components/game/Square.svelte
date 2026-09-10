@@ -10,6 +10,7 @@
 		cellSize = 60,
 		isDark,
 		isHighlighted,
+		showSword = true,
 		piece,
 		onclick,
 		children,
@@ -20,6 +21,7 @@
 		cellSize?: number;
 		isDark: boolean;
 		isHighlighted?: boolean;
+		showSword?: boolean;
 		piece?: Piece | null;
 		onclick?: (_event: MouseEvent) => void;
 		children?: Snippet;
@@ -40,13 +42,13 @@
 >
 	<div
 		class="squircle pointer-events-none absolute inset-0"
-		style="background-color: {isDark ? "var(--chess-field-dark)" : "var(--chess-field-light)"};"
+		style="background-color: {isDark ? 'var(--chess-field-dark)' : 'var(--chess-field-light)'};"
 		class:bg-[#b8d7f2]!={isHighlighted && !isDark && !showDot}
 		class:bg-[#8fb7dc]!={isHighlighted && isDark && !showDot}
 	></div>
 
 	{#if isHighlighted && showDot}
-		{#if piece}
+		{#if piece && showSword}
 			<Sword
 				class="pointer-events-none absolute z-40 {piece.color == 'black'
 					? 'text-white/60'

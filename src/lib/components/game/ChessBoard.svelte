@@ -2,10 +2,10 @@
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
 	import type { Attachment } from "svelte/attachments";
-	import type { BoardGrid, PieceColor, Position } from "$lib/engine/types";
+	import type { BoardGrid, Move, PieceColor, Position } from "$lib/engine/types";
 	import TurnIndicator from "./TurnIndicator.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
-	import { applyMove, formatMoveString, parseMoveString, pieceAt } from "$lib/engine/helpers";
+	import { applyMove, pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
 	import { playSound } from "../effects/sounds";
 
@@ -18,7 +18,7 @@
 
 	let captureTriggers = $state<Record<string, number>>({});
 	let localBoard = $state<BoardGrid | null>(null);
-	let localMoves: string[] = [];
+	let localMoves: Move[] = [];
 
 	$effect(() => {
 		const initial = multiplayerState.storage.meta?.initialBoard;
@@ -26,7 +26,15 @@
 
 		const serverMoves = multiplayerState.storage.moveHistory || [];
 
-		const hasDiverged = localMoves.length > serverMoves.length || localMoves.some((move, i) => move !== serverMoves[i]);
+		const isSameMove = (a: Move, b: Move) =>
+			a.from.row === b.from.row &&
+			a.from.col === b.from.col &&
+			a.to.row === b.to.row &&
+			a.to.col === b.to.col &&
+			a.promotion === b.promotion;
+
+		const hasDiverged =
+			localMoves.length > serverMoves.length || localMoves.some((move, i) => !isSameMove(move, serverMoves[i]));
 		if (hasDiverged || !localBoard) {
 			localBoard = $state.snapshot(initial);
 			localMoves = [];
@@ -34,9 +42,7 @@
 
 		const newMoves = serverMoves.slice(localMoves.length);
 
-		for (const moveStr of newMoves) {
-			const move = parseMoveString(moveStr);
-
+		for (const move of newMoves) {
 			const pieceAtTarget = pieceAt(localBoard, move.to);
 			if (pieceAtTarget) {
 				const square = `${String.fromCharCode(97 + move.to.col)}${5 - move.to.row}`;
@@ -47,7 +53,7 @@
 			}
 
 			applyMove(localBoard, move);
-			localMoves.push(moveStr);
+			localMoves.push(move);
 		}
 	});
 
@@ -115,8 +121,8 @@
 				const from = selectedPos;
 				selectedPos = null; // Deselect before the request
 				try {
-					const moveString = formatMoveString(from, pos);
-					multiplayerState.socket?.updateStorage("moveHistory", "array-add", moveString);
+					const move = { from, to: pos };
+					multiplayerState.socket?.updateStorage("moveHistory", "array-add", move);
 				} catch (error) {
 					// TODO: proper user-facing error handling
 					console.error("Error moving piece:", error);
@@ -243,8 +249,8 @@
 	}
 </script>
 
-<div class="flex w-full flex-1 flex-col items-center justify-center gap-6 p-4">
-	<div class="relative flex flex-col rounded-2xl bg-white p-8">
+<div class="flex w-full flex-1 flex-col items-center justify-center gap-6">
+	<div class="relative flex flex-col rounded-2xl bg-white">
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
 				{#if localBoard}

@@ -1,5 +1,5 @@
 import { pieceAt } from "../engine/helpers.ts";
-import { getLegalMoves, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
+import { getLegalMoves, hasInsufficientMaterial, isCheckmate, isInCheck, isStalemate } from "../engine/rules.ts";
 import type { BoardGrid, Position, PieceColor, GameStatus } from "../engine/types.ts";
 
 const INITIAL_TIME_MS = 300_000;
@@ -111,7 +111,7 @@ export class ChessGame {
 		this.board[to.row][to.col] = finalPiece;
 		this.board[from.row][from.col] = null;
 
-		if (this.status.isCheckmate || this.status.isStalemate) this.stopClock();
+		if (this.status.isGameOver) this.stopClock();
 		return true; // Valid move, executed
 	}
 
@@ -135,7 +135,7 @@ export class ChessGame {
 		if (this.whiteTime <= 0) return "black";
 		if (this.blackTime <= 0) return "white";
 		if (isCheckmate(this.board, this.turn)) return this.turn === "white" ? "black" : "white";
-		if (isStalemate(this.board, this.turn)) return "draw";
+		if (isStalemate(this.board, this.turn) || hasInsufficientMaterial(this.board)) return "draw";
 		return null;
 	}
 
@@ -145,6 +145,7 @@ export class ChessGame {
 			isTimeout: this.whiteTime <= 0 || this.blackTime <= 0,
 			isCheckmate: isCheckmate(this.board, this.turn),
 			isStalemate: isStalemate(this.board, this.turn),
+			isInsufficientMaterial: hasInsufficientMaterial(this.board),
 			winner: this.determineWinner(),
 			isGameOver: false,
 			whiteTime: this.whiteTime,
@@ -152,7 +153,7 @@ export class ChessGame {
 			turn: this.turn,
 			turnStartedAt: this.turnStartedAt,
 		};
-		status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate;
+		status.isGameOver = status.isTimeout || status.isCheckmate || status.isStalemate || status.isInsufficientMaterial;
 		return status;
 	}
 }

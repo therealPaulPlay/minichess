@@ -5,8 +5,6 @@
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { Copy, CopyCheck } from "@lucide/svelte";
 
-	// TODO: YOU STOPPED HERE. When a player joins, we check what kind of match they are playing (private or not)
-	//       and then we take them to the /play game
 	let copied = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout>;
 	let roomCode = $derived(multiplayerState.storage.meta?.roomId);
@@ -25,11 +23,25 @@
 	}
 
 	async function copyToClipboard() {
-		if (!multiplayerState.socket || roomCode === null) return;
+		if (!roomCode) return;
 		try {
-			await navigator.clipboard.writeText(roomCode || "");
-			copied = true;
+			if (navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(roomCode);
+			} else {
+				// Fallback for insecure contexts (e.g. http://192.168.x.x on mobile / LAN)
+				const textarea = document.createElement("textarea");
+				textarea.value = roomCode;
+				textarea.style.position = "fixed";
+				textarea.style.left = "-9999px";
+				textarea.style.top = "-9999px";
+				textarea.setAttribute("readonly", "");
+				document.body.appendChild(textarea);
+				textarea.select();
+				document.execCommand("copy");
+				document.body.removeChild(textarea);
+			}
 
+			copied = true;
 			clearTimeout(timeoutId);
 			timeoutId = setTimeout(() => {
 				copied = false;

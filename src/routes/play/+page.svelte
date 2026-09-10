@@ -5,8 +5,10 @@
 	import { goto } from "$app/navigation";
 	import { fade } from "svelte/transition";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
+	import EndModal from "./EndModal.svelte";
 
 	let inMatchmaking = $state(false);
+	const isGameOver = $derived(multiplayerState.storage.status?.isGameOver);
 
 	// TODO: implement matchmaking
 
@@ -24,10 +26,17 @@
 			<Button variant="secondary">Cancel</Button>
 		</div>
 	{/if}
-	<Button size="lg" variant="secondary" class="group absolute top-0 left-0 m-4 cursor-pointer gap-1" onclick={quitGame}
+	<Button
+		size="lg"
+		variant="secondary"
+		class="group absolute top-0 left-0 z-10 m-4 cursor-pointer gap-1"
+		onclick={quitGame}
 		><ChevronLeftIcon class="-mb-0.5 -ml-0.5 transition-transform group-hover:-translate-x-0.5" /> Leave</Button
 	>
-	<div class="flex flex-1 items-center justify-center">
+	<div class="flex flex-1 scale-75 items-center justify-center md:scale-100">
 		<ChessBoard />
 	</div>
+	{#if isGameOver}
+		<EndModal />
+	{/if}
 </main>

@@ -50,7 +50,7 @@
 	{...props}
 >
 	{#if Icon}
-		<Icon class="my-2 h-full w-full overflow-visible p-3 {draggable ? 'hover:cursor-grab' : ''}" />
+		<Icon class="h-full w-full p-[15%] {draggable ? 'hover:cursor-grab' : ''}" />
 	{/if}
 
 	<!-- Impact dust -->
