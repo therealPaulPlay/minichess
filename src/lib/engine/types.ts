@@ -30,6 +30,7 @@ export interface GameStatus {
 	isTimeout: boolean;
 	isCheckmate: boolean;
 	isStalemate: boolean;
+	isResigned: boolean;
 	isGameOver: boolean;
 	isInsufficientMaterial: boolean;
 	winner: PieceColor | "draw" | null;
@@ -41,11 +42,13 @@ export interface GameStatus {
 }
 
 export interface Meta {
-	isPrivate: boolean;
+	isPrivate?: boolean;
+	isQueue?: boolean;
 	roomId?: string;
 	whiteId?: string;
 	blackId?: string;
 	initialBoard?: BoardGrid;
+	elo?: number;
 }
 
 export interface RoomStorage {
@@ -53,4 +56,14 @@ export interface RoomStorage {
 	meta?: Meta;
 	moveHistory?: Move[];
 	[key: string]: unknown;
+}
+
+export interface Player {
+	id: string;
+	roomId: string;
+	elo?: number;
+}
+
+export interface QueuedPlayer extends Player {
+	joinedAt: number;
 }

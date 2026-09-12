@@ -145,6 +145,7 @@ export class ChessGame {
 			isInsufficientMaterial: hasInsufficientMaterial(this.board),
 			winner: this.determineWinner(),
 			isGameOver: false,
+			isResigned: false,
 			whiteTime: this.whiteTime,
 			blackTime: this.blackTime,
 			turn: this.turn,

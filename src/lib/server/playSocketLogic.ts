@@ -5,7 +5,8 @@ import { isWsUpgradeRateLimited } from "./webSocketRateLimit.ts";
 import { ChessGame, initialBoard } from "./gameLogic.ts";
 
 import type { IncomingMessage } from "node:http";
-import type { Move, RoomStorage } from "../engine/types.ts";
+import type { GameStatus, Move, RoomStorage } from "../engine/types.ts";
+import { addToQueue, removeFromQueue, removeRoomFromQueue, startMatchmaking } from "./matchmaking.ts";
 
 const PORT = 3000;
 
@@ -24,10 +25,14 @@ const server = new PlaySocketServer({
 		callback(true);
 	},
 });
+startMatchmaking(server);
 
 const chessGameInstances = new Map<string, ChessGame>(); // Room ID -> chess game instance
 
 server.onEvent("roomCreationRequested", ({ clientId, initialStorage }) => {
+	// If it's a queue room there is no need to assign white/black or initialBoard
+	if (initialStorage?.meta?.isQueue) return initialStorage;
+
 	const isWhite = Math.random() > 0.5;
 
 	return {
@@ -45,6 +50,20 @@ server.onEvent("roomCreationRequested", ({ clientId, initialStorage }) => {
 
 server.onEvent("roomCreated", (roomId: string) => {
 	server.updateRoomStorage(roomId, "meta", "object-set-key", "roomId", roomId);
+	const roomStorage: RoomStorage | undefined = server.getRoomStorage(roomId);
+	if (!roomStorage) return;
+
+	if (roomStorage?.meta?.isQueue) {
+		const clientId = server.rooms[roomId]?.host || server.rooms[roomId]?.participants?.[0];
+		if (clientId)
+			addToQueue({
+				id: clientId,
+				roomId,
+				elo: roomStorage.meta?.elo || 1000,
+			});
+		return;
+	}
+
 	const chessGame = new ChessGame();
 
 	chessGame.onTimeout = () => {
@@ -57,6 +76,32 @@ server.onEvent("roomCreated", (roomId: string) => {
 server.onEvent("roomDestroyed", (roomId: string) => {
 	chessGameInstances.get(roomId)?.stopClock();
 	chessGameInstances.delete(roomId);
+	removeRoomFromQueue(roomId);
+});
+
+server.onEvent("clientDisconnected", (clientId: string) => {
+	removeFromQueue(clientId);
+});
+
+server.onEvent("clientLeftRoom", (clientId: string, roomId: string) => {
+	const chessGame = chessGameInstances.get(roomId);
+	const roomStorage = server.getRoomStorage(roomId);
+
+	if (chessGame && !chessGame.status.isGameOver) {
+		const leaverColor = roomStorage?.meta?.whiteId === clientId ? "white" : "black";
+		const winner = leaverColor === "white" ? "black" : "white";
+
+		chessGame.stopClock();
+
+		const updatedStatus = {
+			...chessGame.status,
+			isGameOver: true,
+			winner,
+			isResigned: true,
+		} satisfies GameStatus;
+
+		server.updateRoomStorage(roomId, "status", "set", updatedStatus);
+	}
 });
 
 server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage }) => {
@@ -82,7 +127,6 @@ server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage })
 		server.updateRoomStorage(roomId, "status", "set", chessGame.status);
 	}
 });
-
 // Start and clean exit -----------------------------------------------------------------
 httpServer.listen(PORT, "0.0.0.0", () => console.log(`Listening on port ${PORT}.`));
 

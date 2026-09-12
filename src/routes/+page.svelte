@@ -1,8 +1,20 @@
 <script>
 	import Button from "$lib/components/ui/button/button.svelte";
 	import PrivateMatchModal from "./PrivateMatchModal.svelte";
-	import { goto } from "$app/navigation";
 	import PawnLogo from "$lib/components/chess-pieces/PawnLogo.svelte";
+	import { enterMatchmaking } from "$lib/stores/multiplayerStore.svelte";
+	import Spinner from "$lib/components/ui/spinner/spinner.svelte";
+
+	let enteringLobby = $state(false);
+
+	async function startMatchmaking() {
+		enteringLobby = true;
+		try {
+			await enterMatchmaking();
+		} finally {
+			enteringLobby = false;
+		}
+	}
 </script>
 
 <main class="flex min-h-screen w-full bg-zinc-100 p-8 text-slate-900">
@@ -26,7 +38,12 @@
 			</div>
 		</div>
 		<div class="flex flex-col items-center justify-center gap-2">
-			<Button size="lg" class="bg-dark w-fit cursor-pointer text-xl" onclick={() => goto("/play")}>Play</Button>
+			<Button size="lg" class="bg-dark w-fit cursor-pointer text-xl" disabled={enteringLobby} onclick={startMatchmaking}
+				>Play
+				{#if enteringLobby}
+					<Spinner />
+				{/if}
+			</Button>
 			<PrivateMatchModal />
 		</div>
 	</div>

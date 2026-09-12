@@ -3,17 +3,23 @@
 	import Button from "$lib/components/ui/button/button.svelte";
 	import { Trophy, RotateCcw, House, Skull, Swords } from "@lucide/svelte";
 	import { goto } from "$app/navigation";
-	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
+	import { enterMatchmaking, multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import type { PieceColor, RoomStorage } from "$lib/engine/types";
 	import Replay from "./Replay.svelte";
+	import Spinner from "$lib/components/ui/spinner/spinner.svelte";
 
 	let gameStorage = $state<RoomStorage | null>(null);
 	let isOpen = $state(true);
+	let enteringLobby = $state(false);
 
-	function handlePlayAgain() {
-		isOpen = false;
-		// TODO: Add option for rematch
-		console.log("Play again");
+	async function handlePlayAgain() {
+		enteringLobby = true;
+		try {
+			await enterMatchmaking();
+		} finally {
+			isOpen = false;
+			enteringLobby = false;
+		}
 	}
 
 	function handleLeave() {
@@ -65,7 +71,11 @@
 					{:else}
 						{gameStorage.status?.winner === userColor() ? "Won" : "Lost"} by
 						<span class="text-foreground font-semibold">
-							{gameStorage.status?.isCheckmate ? "checkmate" : "time"}
+							{#if gameStorage.status?.isResigned}
+								resignation / abandonment
+							{:else}
+								{gameStorage.status?.isCheckmate ? "checkmate" : "time"}
+							{/if}
 						</span>
 					{/if}
 				</p>
@@ -97,8 +107,17 @@
 					<House class="h-4 w-4" />
 					Main Menu
 				</Button>
-				<Button variant="default" class="flex-1 cursor-pointer gap-2 font-semibold" onclick={handlePlayAgain}>
-					<RotateCcw class="h-4 w-4" />
+				<Button
+					variant="default"
+					class="flex-1 cursor-pointer gap-2 font-semibold"
+					disabled={enteringLobby}
+					onclick={handlePlayAgain}
+				>
+					{#if !enteringLobby}
+						<RotateCcw />
+					{:else}
+						<Spinner />
+					{/if}
 					Play Again
 				</Button>
 			</div>

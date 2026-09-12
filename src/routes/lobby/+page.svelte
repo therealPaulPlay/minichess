@@ -7,10 +7,16 @@
 
 	let copied = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout>;
+	let isPrivate = $derived(multiplayerState.storage.meta?.isPrivate);
 	let roomCode = $derived(multiplayerState.storage.meta?.roomId);
 
+	// If Private Match: Wait for player to join
 	multiplayerState.socket?.onEvent("clientJoined", () => {
 		if (multiplayerState.socket?.isHost) goto("/play");
+	});
+	// If Matchmaking: Wait for matchmaker to move player to room
+	multiplayerState.socket?.onEvent("moved", () => {
+		goto("/play");
 	});
 
 	function quitLobby() {
@@ -37,27 +43,40 @@
 
 <div class="flex min-h-screen w-full flex-col items-center justify-center">
 	<div class="text-dark mb-12 flex flex-col items-center text-center">
-		<div class="mb-4 text-4xl font-bold">Waiting...</div>
-		<p class="mb-4 max-w-3/4 text-center">
-			Waiting for a player to join your lobby. Share the code on your screen. Once a player enters the game will start
-			immediatly.
-		</p>
-		<div class="relative flex flex-row gap-2">
-			{#if roomCode}
-				{#each roomCode as letter}
-					<span class="text-4xl font-bold underline">{letter.toUpperCase()}</span>
-				{/each}
+		<div class="mb-4 text-4xl font-bold">
+			{#if !isPrivate}
+				Finding match...
+			{:else}
+				Waiting...
 			{/if}
-			<div class="absolute -right-12 translate-y-1">
-				<Button variant="ghost" onclick={copyToClipboard}>
-					{#if !copied}
-						<Copy />
-					{:else}
-						<CopyCheck class="text-green-800" />
-					{/if}
-				</Button>
-			</div>
 		</div>
+		<p class="mb-4 max-w-3/4 text-center">
+			{#if !isPrivate}
+				Searching for an opponent of similar skill. The game will start automatically when matched.
+			{:else}
+				Waiting for a player to join your lobby. Share the code on your screen. Once a player enters the game will start
+				immediately.
+			{/if}
+		</p>
+		{#if isPrivate}
+			<div class="relative flex flex-row gap-2">
+				{#if roomCode}
+					{#each roomCode as letter}
+						<span class="text-4xl font-bold underline">{letter.toUpperCase()}</span>
+					{/each}
+				{/if}
+
+				<div class="absolute -right-12 translate-y-1">
+					<Button variant="ghost" onclick={copyToClipboard}>
+						{#if !copied}
+							<Copy />
+						{:else}
+							<CopyCheck class="text-green-800" />
+						{/if}
+					</Button>
+				</div>
+			</div>
+		{/if}
 	</div>
 	<div class="scale-130">
 		<ChessLoading />
