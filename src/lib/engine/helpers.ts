@@ -25,8 +25,7 @@ export function cloneBoard(board: BoardGrid): BoardGrid {
 export function createBoardFromMoves(startingBoard: BoardGrid, moves: Move[] = []): BoardGrid {
 	if (!startingBoard) return [];
 	const board = cloneBoard(startingBoard);
-	for (const move of moves) {
-		applyMove(board, move);
-	}
+	for (const move of moves) applyMove(board, move);
+
 	return board;
 }

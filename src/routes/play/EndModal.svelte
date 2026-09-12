@@ -36,9 +36,7 @@
 	}
 
 	$effect(() => {
-		if (multiplayerState.storage?.status) {
-			gameStorage = $state.snapshot(multiplayerState.storage);
-		}
+		if (multiplayerState.storage?.status) gameStorage = $state.snapshot(multiplayerState.storage);
 	});
 </script>
 
@@ -73,7 +71,7 @@
 				</p>
 			</div>
 
-			<!-- Match Statistics Card -->
+			<!-- Match statistics card -->
 			<div class="border-border/50 bg-muted/40 grid grid-cols-2 gap-3 rounded-xl border p-4 text-center">
 				<div class="flex flex-col items-center">
 					<span class="text-muted-foreground text-xs font-semibold tracking-wider uppercase">Total Moves</span>

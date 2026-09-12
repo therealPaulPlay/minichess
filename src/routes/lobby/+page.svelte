@@ -10,36 +10,19 @@
 	let roomCode = $derived(multiplayerState.storage.meta?.roomId);
 
 	multiplayerState.socket?.onEvent("clientJoined", () => {
-		if (multiplayerState.socket?.isHost) {
-			goto("/play");
-		}
+		if (multiplayerState.socket?.isHost) goto("/play");
 	});
 
 	function quitLobby() {
-		if (multiplayerState.socket?.id) {
-			multiplayerState.socket.destroy();
-		}
+		if (multiplayerState.socket?.id) multiplayerState.socket.destroy();
+
 		goto("/");
 	}
 
 	async function copyToClipboard() {
 		if (!roomCode) return;
 		try {
-			if (navigator.clipboard?.writeText) {
-				await navigator.clipboard.writeText(roomCode);
-			} else {
-				// Fallback for insecure contexts (e.g. http://192.168.x.x on mobile / LAN)
-				const textarea = document.createElement("textarea");
-				textarea.value = roomCode;
-				textarea.style.position = "fixed";
-				textarea.style.left = "-9999px";
-				textarea.style.top = "-9999px";
-				textarea.setAttribute("readonly", "");
-				document.body.appendChild(textarea);
-				textarea.select();
-				document.execCommand("copy");
-				document.body.removeChild(textarea);
-			}
+			if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(roomCode);
 
 			copied = true;
 			clearTimeout(timeoutId);

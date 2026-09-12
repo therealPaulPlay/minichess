@@ -48,9 +48,7 @@
 				const square = `${String.fromCharCode(97 + move.to.col)}${5 - move.to.row}`;
 				captureTriggers[square] = (captureTriggers[square] || 0) + 1; // triggers ImpactDust
 				playSound("capture");
-			} else {
-				playSound("move");
-			}
+			} else playSound("move");
 
 			applyMove(localBoard, move);
 			localMoves.push(move);
@@ -77,11 +75,8 @@
 		// Update the active clock
 		const interval = setInterval(() => {
 			const elapsed = Date.now() - startedAt;
-			if (activeTurn === "white") {
-				whiteTimeLeft = Math.max(0, baseWhite - elapsed);
-			} else {
-				blackTimeLeft = Math.max(0, baseBlack - elapsed);
-			}
+			if (activeTurn === "white") whiteTimeLeft = Math.max(0, baseWhite - elapsed);
+			else blackTimeLeft = Math.max(0, baseBlack - elapsed);
 		}, 50);
 		return () => clearInterval(interval);
 	});

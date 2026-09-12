@@ -121,11 +121,8 @@ export class ChessGame {
 		this.turnStartedAt = Date.now();
 
 		// Arm the alarm for the player whose turn it now is
-		if (!this.status.isGameOver) {
-			this.armTimeout();
-		} else {
-			this.stopClock();
-		}
+		if (!this.status.isGameOver) this.armTimeout();
+		else this.stopClock();
 
 		return this.turn;
 	}

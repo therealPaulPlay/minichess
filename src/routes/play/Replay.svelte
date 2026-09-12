@@ -48,10 +48,7 @@
 			if (currentMoveIndex < moves.length) {
 				currentMoveIndex++;
 				playSound("move");
-			} else {
-				// Reached the end
-				isPlaying = false;
-			}
+			} else isPlaying = false;
 		}, intervalMs);
 
 		return () => clearInterval(timer);
@@ -60,9 +57,8 @@
 	// Controls
 	function togglePlay() {
 		// If at the end, restart from move 0
-		if (currentMoveIndex >= moves.length) {
-			currentMoveIndex = 0;
-		}
+		if (currentMoveIndex >= moves.length) currentMoveIndex = 0;
+
 		isPlaying = !isPlaying;
 	}
 

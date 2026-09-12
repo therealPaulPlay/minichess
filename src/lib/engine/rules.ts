@@ -25,9 +25,7 @@ function findKing(board: BoardGrid, color: PieceColor): Position | null {
 	for (let r = 0; r < 5; r++) {
 		for (let c = 0; c < 5; c++) {
 			const cell = board[r][c];
-			if (cell && cell.type === "k" && cell.color === color) {
-				return { row: r, col: c };
-			}
+			if (cell && cell.type === "k" && cell.color === color) return { row: r, col: c };
 		}
 	}
 	return null;
@@ -126,22 +124,18 @@ export function hasInsufficientMaterial(board: BoardGrid): boolean {
 			const piece = board[r][c];
 			if (piece) {
 				// Pawns, Rooks, and Queens can always force checkmate (or promote)
-				if (piece.type === "p" || piece.type === "r" || piece.type === "q") {
-					return false;
-				}
+				if (piece.type === "p" || piece.type === "r" || piece.type === "q") return false;
+
 				pieces.push({ piece, pos: { row: r, col: c } });
 			}
 		}
 	}
 	// Case: King vs King
-	if (pieces.length === 2) {
-		return true;
-	}
+	if (pieces.length === 2) return true;
+
 	// Case: King + Minor Piece vs King (3 pieces remaining)
-	if (pieces.length === 3) {
-		const hasMinorPiece = pieces.some((p) => p.piece.type === "b" || p.piece.type === "n");
-		if (hasMinorPiece) return true;
-	}
+	if (pieces.length === 3) return pieces.some((p) => p.piece.type === "b" || p.piece.type === "n");
+
 	// Case: King + Bishop vs King + Bishop (4 pieces remaining)
 	if (pieces.length === 4) {
 		const bishops = pieces.filter((p) => p.piece.type === "b");
@@ -149,9 +143,7 @@ export function hasInsufficientMaterial(board: BoardGrid): boolean {
 		if (bishops.length === 2 && bishops[0].piece.color !== bishops[1].piece.color) {
 			const b1SquareColor = (bishops[0].pos.row + bishops[0].pos.col) % 2;
 			const b2SquareColor = (bishops[1].pos.row + bishops[1].pos.col) % 2;
-			if (b1SquareColor === b2SquareColor) {
-				return true;
-			}
+			if (b1SquareColor === b2SquareColor) return true;
 		}
 	}
 	return false;

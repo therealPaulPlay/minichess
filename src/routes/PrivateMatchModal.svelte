@@ -132,10 +132,8 @@
 						class="absolute top-0 -left-12 opacity-70"
 						onclick={async () => {
 							try {
-								if (navigator.clipboard?.readText) {
-									const text = await navigator.clipboard.readText();
-									joinCode = text.trim().toUpperCase();
-								}
+								if (navigator.clipboard?.readText)
+									joinCode = (await navigator.clipboard.readText()).trim().toUpperCase();
 							} catch (err) {
 								console.warn("Clipboard paste not supported or denied:", err);
 							}
