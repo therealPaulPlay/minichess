@@ -4,6 +4,7 @@
 	import PawnLogo from "$lib/components/chess-pieces/PawnLogo.svelte";
 	import { enterMatchmaking } from "$lib/stores/multiplayerStore.svelte";
 	import Spinner from "$lib/components/ui/spinner/spinner.svelte";
+	import { goto } from "$app/navigation";
 
 	let enteringLobby = $state(false);
 
@@ -38,13 +39,28 @@
 			</div>
 		</div>
 		<div class="flex flex-col items-center justify-center gap-2">
-			<Button size="lg" class="bg-dark w-fit cursor-pointer text-xl" disabled={enteringLobby} onclick={startMatchmaking}
-				>Play
-				{#if enteringLobby}
-					<Spinner />
-				{/if}
+			<div class="flex gap-2">
+				<Button
+					size="lg"
+					class="bg-dark w-fit cursor-pointer text-xl"
+					disabled={enteringLobby}
+					onclick={startMatchmaking}
+					>Play
+					{#if enteringLobby}
+						<Spinner />
+					{/if}
+				</Button>
+				<PrivateMatchModal />
+			</div>
+			<Button
+				variant="ghost"
+				onclick={() => {
+					goto("/guide");
+				}}
+				class="opacity-50"
+			>
+				How to play
 			</Button>
-			<PrivateMatchModal />
 		</div>
 	</div>
 </main>

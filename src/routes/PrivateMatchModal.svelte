@@ -79,7 +79,7 @@
 </script>
 
 <Dialog.Root>
-	<Dialog.Trigger class={buttonVariants({ variant: "outline" })}><Users />Private match</Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: "outline", size: "lg" })}><Users />Private match</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title class="text-center">Private Match</Dialog.Title>
