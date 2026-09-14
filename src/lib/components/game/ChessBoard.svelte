@@ -12,6 +12,8 @@
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 	const INITIAL_TIME_MS = 300_000;
 
+	let boardRef: HTMLElement | null = $state(null);
+
 	let blackTimeLeft = $state(INITIAL_TIME_MS);
 	let whiteTimeLeft = $state(INITIAL_TIME_MS);
 	let turn: PieceColor = $state("white");
@@ -246,9 +248,21 @@
 	const isFlipped = $derived(userColor() === "black");
 	const rowIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
 	const colIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
+
+	function handleWindowClick(e: MouseEvent) {
+		// Deselect the piece when clicking outside the board
+		if (selectedPos && boardRef && !boardRef.contains(e.target as Node)) {
+			selectedPos = null;
+		}
+	}
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === "Escape") {
+			selectedPos = null;
+		}
+	}
 </script>
 
-<div class="flex w-full flex-1 flex-col items-center justify-center gap-6">
+<div class="flex flex-col items-center justify-center gap-6" bind:this={boardRef}>
 	<div class="relative flex flex-col rounded-2xl bg-white">
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
@@ -292,3 +306,4 @@
 		</div>
 	</div>
 </div>
+<svelte:window onclick={handleWindowClick} onkeydown={handleKeydown} />
