@@ -1,4 +1,4 @@
-import type { BoardGrid, Move, Piece, PieceType, Position } from "./types";
+import type { BoardGrid, Move, Piece, PieceColor, PieceOnBoard, PieceType, Position } from "./types";
 
 export function pieceAt(board: BoardGrid, pos: Position): Piece | null {
 	return board[pos.row][pos.col];
@@ -22,10 +22,22 @@ export function cloneBoard(board: BoardGrid): BoardGrid {
 	if (!board) return [];
 	return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
 }
+
 export function createBoardFromMoves(startingBoard: BoardGrid, moves: Move[] = []): BoardGrid {
 	if (!startingBoard) return [];
 	const board = cloneBoard(startingBoard);
 	for (const move of moves) applyMove(board, move);
 
 	return board;
+}
+
+export function getAllPieces(board: BoardGrid, color: PieceColor): PieceOnBoard[] {
+	const pieces: PieceOnBoard[] = [];
+	for (let r = 0; r < 5; r++) {
+		for (let c = 0; c < 5; c++) {
+			const piece = board[r][c];
+			if (piece && piece.color === color) pieces.push({ piece, pos: { row: r, col: c } });
+		}
+	}
+	return pieces;
 }

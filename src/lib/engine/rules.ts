@@ -119,6 +119,7 @@ export function hasAnyLegalMoves(board: BoardGrid, color: PieceColor): boolean {
 export function hasInsufficientMaterial(board: BoardGrid): boolean {
 	const pieces: PieceOnBoard[] = [];
 
+	// TODO: Replace with getAllPieces()
 	for (let r = 0; r < 5; r++) {
 		for (let c = 0; c < 5; c++) {
 			const piece = board[r][c];

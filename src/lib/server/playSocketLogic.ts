@@ -7,6 +7,7 @@ import { ChessGame, initialBoard } from "./gameLogic.ts";
 import type { IncomingMessage } from "node:http";
 import type { GameStatus, Move, RoomStorage } from "../engine/types.ts";
 import { addToQueue, removeFromQueue, removeRoomFromQueue, startMatchmaking } from "./matchmaking.ts";
+import { BotWorker } from "./botWorker.ts";
 
 const PORT = 3000;
 
@@ -127,8 +128,23 @@ server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage })
 		server.updateRoomStorage(roomId, "status", "set", chessGame.status);
 	}
 });
+
+async function spawnQueueBot(depth: number, elo: number) {
+	const bot = new BotWorker(depth);
+	await bot.connect();
+	await bot.joinQueue(elo);
+	console.log(`[Bot] ${bot.id} is now waiting in the matchmaking queue!`);
+	bot.onGameOver = () => {
+		console.log(`[Bot] Match ended. Re-queuing another bot in 3s...`);
+		bot.destroy();
+		setTimeout(() => spawnQueueBot(depth, elo), 3000);
+	};
+}
 // Start and clean exit -----------------------------------------------------------------
-httpServer.listen(PORT, "0.0.0.0", () => console.log(`Listening on port ${PORT}.`));
+httpServer.listen(PORT, "0.0.0.0", () => {
+	console.log(`Listening on port ${PORT}.`);
+	spawnQueueBot(5, 1500);
+});
 
 function shutdown() {
 	server.stop();
