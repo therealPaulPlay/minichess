@@ -1,0 +1,21 @@
+{
+	"name": "Minichess",
+	"short_name": "Minichess",
+	"description": "Fast online 5x5 tactical chess variant.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#f4f4f5",
+	"theme_color": "#404141",
+	"icons": [
+		{
+			"src": "/images/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/images/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
+}
