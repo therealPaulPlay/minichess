@@ -8,6 +8,7 @@
 	import { applyMove, pieceAt } from "$lib/engine/helpers";
 	import { getLegalMoves } from "$lib/engine/rules";
 	import { playSound } from "../effects/sounds";
+	import { toast } from "svelte-sonner";
 
 	const MAX_SNAP_RADIUS = 80; // Radius in px
 	const INITIAL_TIME_MS = 300_000;
@@ -45,12 +46,20 @@
 		const newMoves = serverMoves.slice(localMoves.length);
 
 		for (const move of newMoves) {
+			const movingPiece = pieceAt(localBoard, move.from);
 			const pieceAtTarget = pieceAt(localBoard, move.to);
+
+			const isPromotion = Boolean(
+				move.promotion || (movingPiece?.type === "p" && (move.to.row === 0 || move.to.row === 4)),
+			);
+
 			if (pieceAtTarget) {
 				const square = `${String.fromCharCode(97 + move.to.col)}${5 - move.to.row}`;
 				captureTriggers[square] = (captureTriggers[square] || 0) + 1; // triggers ImpactDust
 				playSound("capture");
 			} else playSound("move");
+
+			if (isPromotion) playSound("promotion");
 
 			applyMove(localBoard, move);
 			localMoves.push(move);
@@ -121,8 +130,8 @@
 					const move = { from, to: pos };
 					multiplayerState.socket?.updateStorage("moveHistory", "array-add", move);
 				} catch (error) {
-					// TODO: proper user-facing error handling
 					console.error("Error moving piece:", error);
+					toast.error("Error moving piece");
 				}
 				return;
 			}

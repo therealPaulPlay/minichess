@@ -8,6 +8,7 @@
 	import EndModal from "./EndModal.svelte";
 	import Replay from "./Replay.svelte";
 	import { playSound } from "$lib/components/effects/sounds";
+	import { onMount } from "svelte";
 
 	const isGameOver = $derived(multiplayerState.storage.status?.isGameOver);
 	const userColor = $derived(
@@ -29,6 +30,10 @@
 			else playSound("endLose");
 			endSoundPlayed = true;
 		}
+	});
+
+	onMount(() => {
+		playSound("startGame");
 	});
 </script>
 

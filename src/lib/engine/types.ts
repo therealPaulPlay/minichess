@@ -67,3 +67,10 @@ export interface Player {
 export interface QueuedPlayer extends Player {
 	joinedAt: number;
 }
+
+export interface ErrorModalOptions {
+	title: string;
+	message: string;
+	actionText?: string;
+	onAction?: () => void;
+}

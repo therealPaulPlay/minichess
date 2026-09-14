@@ -14,7 +14,7 @@ export default defineConfig({
 		},
 	},
 	ssr: {
-		noExternal: ["gifenc"],
+		noExternal: ["gifenc", "svelte-sonner"],
 	},
 	plugins: [
 		tailwindcss(),

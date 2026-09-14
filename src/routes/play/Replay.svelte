@@ -9,6 +9,7 @@
 	import { playSound } from "$lib/components/effects/sounds";
 	import { generateReplayGif } from "$lib/utils/gifGenerator";
 	import { Spinner } from "$lib/components/ui/spinner/index.js";
+	import { toast } from "svelte-sonner";
 
 	let {
 		moves = [],
@@ -44,6 +45,7 @@
 			URL.revokeObjectURL(url);
 		} catch (err) {
 			console.error("Failed to generate GIF:", err);
+			toast.error("Failed to generate GIF");
 		} finally {
 			isGeneratingGif = false;
 		}
@@ -133,7 +135,7 @@
 
 <div class="flex flex-col items-center justify-center gap-4">
 	<!-- Board -->
-	<div class="relative flex flex-col items-center rounded-3xl bg-white shadow-xl sm:p-8">
+	<div class="relative flex flex-col items-center rounded-2xl bg-white p-2 shadow-xl">
 		<div class="grid grid-cols-5">
 			{#each rowIndices as r}
 				{#each colIndices as c}

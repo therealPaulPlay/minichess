@@ -6,6 +6,7 @@ export const SOUNDS = {
 	startGame: "/sounds/start-game.wav",
 	endWin: "/sounds/end-win.wav",
 	endLose: "/sounds/end-lose.wav",
+	promotion: "/sounds/promotion.wav",
 } as const;
 
 export type SoundName = keyof typeof SOUNDS;

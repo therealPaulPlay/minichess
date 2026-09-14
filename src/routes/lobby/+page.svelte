@@ -4,6 +4,7 @@
 	import Button from "$lib/components/ui/button/button.svelte";
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import { Copy, CopyCheck } from "@lucide/svelte";
+	import { toast } from "svelte-sonner";
 
 	let copied = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout>;
@@ -37,6 +38,7 @@
 			}, 2000);
 		} catch (error) {
 			console.error("Failed to copy:", error);
+			toast.error("Failed to copy");
 		}
 	}
 </script>
