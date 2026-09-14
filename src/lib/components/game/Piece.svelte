@@ -18,6 +18,7 @@
 		class: className = "",
 		triggerEffect = 0,
 		isUnderAttack = false,
+		isDead = false,
 		...props
 	}: {
 		type: PieceType;
@@ -26,6 +27,7 @@
 		class?: string;
 		triggerEffect?: number;
 		isUnderAttack?: boolean;
+		isDead?: boolean;
 	} & HTMLAttributes<HTMLDivElement> = $props();
 
 	const iconMap: Record<PieceType, Component> = {
@@ -47,6 +49,7 @@
 		className,
 	]}
 	class:tilt-n-move-shaking={isUnderAttack}
+	class:dead={isDead}
 	{...props}
 >
 	{#if Icon}
@@ -66,6 +69,14 @@
 </div>
 
 <style>
+	.dead {
+		transform: rotate(-25deg);
+		opacity: 0.75;
+		transition:
+			transform 0.3s ease-in-out,
+			opacity 0.3s ease-in-out;
+	}
+
 	.tilt-n-move-shaking {
 		animation: tilt-n-move-shaking 0.25s ease-in infinite;
 	}

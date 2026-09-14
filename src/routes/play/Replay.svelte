@@ -4,7 +4,7 @@
 	import Button from "$lib/components/ui/button/button.svelte";
 	import * as Select from "$lib/components/ui/select/index.js";
 	import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight } from "@lucide/svelte";
-	import type { BoardGrid, Move } from "$lib/engine/types";
+	import type { BoardGrid, Move, PieceColor } from "$lib/engine/types";
 	import { createBoardFromMoves } from "$lib/engine/helpers";
 	import { playSound } from "$lib/components/effects/sounds";
 
@@ -12,13 +12,18 @@
 		moves = [],
 		initialBoard = [],
 		cellSize = 60,
+		winner = "draw",
+		isFlipped = false,
 	}: {
 		moves?: Move[];
 		initialBoard?: BoardGrid;
 		cellSize?: number;
+		winner?: PieceColor | "draw";
+		isFlipped?: boolean;
 	} = $props();
 
 	let currentMoveIndex = $state(0);
+	let previousMovesLength: number | null = null;
 	let isPlaying = $state(false);
 	let selectedSpeed = $state("1000");
 	const intervalMs = $derived(Number(selectedSpeed));
@@ -40,6 +45,16 @@
 		if (!lastMove) return false;
 		return (lastMove.from.row === r && lastMove.from.col === c) || (lastMove.to.row === r && lastMove.to.col === c);
 	}
+
+	const rowIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
+	const colIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
+
+	$effect(() => {
+		if (previousMovesLength !== moves.length) {
+			previousMovesLength = moves.length;
+			currentMoveIndex = moves.length;
+		}
+	});
 
 	$effect(() => {
 		if (!isPlaying) return;
@@ -93,14 +108,20 @@
 	<!-- Board -->
 	<div class="relative flex flex-col rounded-2xl bg-white p-4 shadow-xl">
 		<div class="grid grid-cols-5">
-			{#each currentBoard as row, r}
-				{#each row as piece, c}
-					{@const isDark = (r + c) % 2 === 1}
+			{#each rowIndices as r}
+				{#each colIndices as c}
+					{@const piece = currentBoard[r]?.[c]}
+					{@const isDark = (r + c) % 2 === 0}
 					{@const isHighlighted = isSquareLastMove(r, c)}
 
 					<Square {isDark} {isHighlighted} {cellSize} row={r} col={c} {piece} showSword={false}>
 						{#if piece}
-							<Piece type={piece.type} color={piece.color} draggable={false} />
+							<Piece
+								type={piece.type}
+								color={piece.color}
+								draggable={false}
+								isDead={piece.color !== winner && piece.type === "k" && currentMoveIndex === moves.length}
+							/>
 						{/if}
 					</Square>
 				{/each}
@@ -109,9 +130,7 @@
 	</div>
 
 	<!-- Replay control bar -->
-	<div
-		class="bg-muted/60 border-border/60 flex max-w-full items-center justify-center gap-1 rounded-full border px-1 py-1"
-	>
+	<div class="flex w-full max-w-full items-center justify-between">
 		<Button
 			variant="ghost"
 			size="icon"
@@ -166,17 +185,17 @@
 			<SkipForward class="size-3.5" />
 		</Button>
 		<!-- Move counter -->
-		<div class="text-muted-foreground mx-1 text-xs font-semibold select-none">
+		<div class="text-muted-foreground mx-1 min-w-12 text-center text-xs font-semibold select-none">
 			{currentMoveIndex}/{moves.length}
 		</div>
 		<!-- Speed select -->
 		<Select.Root type="single" bind:value={selectedSpeed}>
-			<Select.Trigger class="cursor-pointer px-3 text-xs">
+			<Select.Trigger class="cursor-pointer px-3 text-xs select-none">
 				{currentSpeedLabel}
 			</Select.Trigger>
 			<Select.Content class="rounded-xl p-1">
 				{#each speedOptions as opt}
-					<Select.Item value={opt.value} label={opt.label} class="cursor-pointer text-xs">
+					<Select.Item value={opt.value} label={opt.label} class="cursor-pointer text-xs select-none">
 						{opt.label}
 					</Select.Item>
 				{/each}
