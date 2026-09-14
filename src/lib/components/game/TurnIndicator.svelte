@@ -7,14 +7,26 @@
 		whitePercentage,
 		blackPercentage,
 		turn,
-		sideIndicator,
-	}: { whitePercentage: number; blackPercentage: number; turn: PieceColor; sideIndicator: PieceColor } = $props();
+		isFlipped = false,
+	}: {
+		whitePercentage: number;
+		blackPercentage: number;
+		turn: PieceColor;
+		isFlipped: boolean;
+	} = $props();
 
 	const inCheck = $derived(multiplayerState.storage.status?.isCheck);
 
 	const MAX_FILL = 90;
-	const blackY = $derived((blackPercentage / 100) * MAX_FILL);
-	const whiteY = $derived(200 - (whitePercentage / 100) * MAX_FILL);
+
+	// Dynamically assign top vs bottom color
+	const bottomColor = $derived(isFlipped ? "black" : "white");
+	const topColor = $derived(isFlipped ? "white" : "black");
+	const bottomPercentage = $derived(isFlipped ? blackPercentage : whitePercentage);
+	const topPercentage = $derived(isFlipped ? whitePercentage : blackPercentage);
+
+	const topY = $derived((topPercentage / 100) * MAX_FILL);
+	const bottomY = $derived(200 - (bottomPercentage / 100) * MAX_FILL);
 </script>
 
 <div class="relative flex h-14 w-8 justify-center p-1">
@@ -72,20 +84,20 @@
 
 		<g clip-path="url(#track-clip)">
 			<!-- Black time -->
-			<g class="transition-transform duration-300 ease-out" style="transform: translateY({blackY}px);">
+			<g class="transition-transform duration-300 ease-out" style="transform: translateY({topY}px);">
 				<path
 					d="M -36 0 q 3 1.5 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 v -220 h -96 Z"
 					class="wave-black fill-(--chess-piece-light) transition-opacity duration-300"
-					class:opacity-20={turn === "white"}
+					class:opacity-20={turn !== topColor}
 				/>
 			</g>
 
 			<!-- White time -->
-			<g class="transition-transform duration-300 ease-out" style="transform: translateY({whiteY}px);">
+			<g class="transition-transform duration-300 ease-out" style="transform: translateY({bottomY}px);">
 				<path
 					d="M -36 0 q 3 -1.5 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 t 6 0 v 220 h -96 Z"
 					class="wave-white fill-(--chess-piece-light) transition-opacity duration-300"
-					class:opacity-20={turn === "black"}
+					class:opacity-20={turn !== bottomColor}
 				/>
 			</g>
 		</g>
@@ -116,32 +128,26 @@
 	<!-- Inidcator circle -->
 	<div
 		class="bg-light absolute h-6 w-6 rounded-full shadow-sm inset-shadow-xs inset-shadow-white transition-transform"
-		class:translate-y-6={turn === "white"}
-		class:translate-y-0={turn === "black"}
+		class:translate-y-6={turn === bottomColor}
+		class:translate-y-0={turn === topColor}
 	></div>
 
 	<div
 		class="absolute top-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-5={turn === "white"}
-		class:tilt-n-move-shaking={turn === "black" && inCheck}
+		class:opacity-5={turn !== topColor && topColor === "black"}
+		class:opacity-30={turn !== topColor && topColor === "white"}
+		class:tilt-n-move-shaking={turn === topColor && inCheck}
 	>
-		<KingIcon class="rotate-180 text-black" />
+		<KingIcon class="rotate-180 {topColor === 'white' ? 'text-(--chess-piece-light)' : 'text-black'}" />
 	</div>
-
 	<div
 		class="absolute bottom-1 flex h-6 w-6 items-center justify-center p-1 transition-opacity"
-		class:opacity-30={turn === "black"}
-		class:tilt-n-move-shaking={turn === "white" && inCheck}
+		class:opacity-5={turn !== bottomColor && bottomColor === "black"}
+		class:opacity-30={turn !== bottomColor && bottomColor === "white"}
+		class:tilt-n-move-shaking={turn === bottomColor && inCheck}
 	>
-		<KingIcon class="text-(--chess-piece-light)" />
+		<KingIcon class={bottomColor === "white" ? "text-(--chess-piece-light)" : "text-black"} />
 	</div>
-
-	<div
-		class="bg-dark absolute -right-4 flex h-2 w-2 items-center justify-center rounded-full p-1 transition-opacity"
-		class:top-3={sideIndicator === "black"}
-		class:bottom-3={sideIndicator === "white"}
-		class:opacity-30={turn !== sideIndicator}
-	></div>
 </div>
 
 <style>

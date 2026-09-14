@@ -242,6 +242,10 @@
 	function userColor(): PieceColor {
 		return multiplayerState.storage.meta?.whiteId === multiplayerState.socket?.id ? "white" : "black";
 	}
+
+	const isFlipped = $derived(userColor() === "black");
+	const rowIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
+	const colIndices = $derived(isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4]);
 </script>
 
 <div class="flex w-full flex-1 flex-col items-center justify-center gap-6">
@@ -249,12 +253,13 @@
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
 				{#if localBoard}
-					{#each localBoard as row, rIndex}
-						{#each row as cell, cIndex}
-							{const col = $derived(String.fromCharCode(97 + cIndex))}
-							{const rowLabel = $derived(5 - Math.floor(rIndex))}
-							{const square = $derived(`${col}${rowLabel}`)}
-							{const highlighted = $derived(isHighlighted(rIndex, cIndex, validMoves))}
+					{#each rowIndices as rIndex}
+						{#each colIndices as cIndex}
+							{@const cell = localBoard[rIndex]?.[cIndex]}
+							{@const col = String.fromCharCode(97 + cIndex)}
+							{@const rowLabel = 5 - Math.floor(rIndex)}
+							{@const square = `${col}${rowLabel}`}
+							{@const highlighted = isHighlighted(rIndex, cIndex, validMoves)}
 							<Square
 								isDark={(cIndex + rIndex) % 2 == 0}
 								{square}
@@ -282,7 +287,7 @@
 				{/if}
 			</div>
 			<div class="absolute -right-8 flex h-full translate-x-full scale-150 items-center justify-center">
-				<TurnIndicator {whitePercentage} {blackPercentage} {turn} sideIndicator={userColor()} />
+				<TurnIndicator {whitePercentage} {blackPercentage} {turn} {isFlipped} />
 			</div>
 		</div>
 	</div>
