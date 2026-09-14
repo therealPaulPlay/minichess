@@ -6,11 +6,14 @@
 	import { enterMatchmaking, multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import type { PieceColor, RoomStorage } from "$lib/engine/types";
 	import Spinner from "$lib/components/ui/spinner/spinner.svelte";
+	import { calculateEloChange, getUserElo, setUserElo } from "$lib/utils/elo";
 
 	let { open = $bindable(true) }: { open?: boolean } = $props();
 
 	let gameStorage = $state<RoomStorage | null>(null);
 	let enteringLobby = $state(false);
+
+	let hasCalculated = false;
 
 	async function handlePlayAgain() {
 		enteringLobby = true;
@@ -34,7 +37,26 @@
 	}
 
 	$effect(() => {
-		if (multiplayerState.storage?.status) gameStorage = $state.snapshot(multiplayerState.storage);
+		const storage = multiplayerState.storage;
+		if (storage?.status?.isGameOver && !hasCalculated) {
+			hasCalculated = true;
+			gameStorage = $state.snapshot(storage);
+
+			// Don't calculate for private/custom friend matches
+			if (storage.meta?.isPrivate) return;
+
+			const myColor = userColor();
+			if (!myColor) return;
+
+			const myCurrentElo = getUserElo();
+			const opponentElo = myColor === "white" ? (storage.meta?.blackElo ?? 1000) : (storage.meta?.whiteElo ?? 1000);
+
+			const score = storage.status.winner === myColor ? 1 : storage.status.winner === "draw" ? 0.5 : 0;
+			const delta = calculateEloChange(myCurrentElo, opponentElo, score);
+			const newElo = Math.max(100, myCurrentElo + delta);
+
+			setUserElo(newElo);
+		}
 	});
 </script>
 

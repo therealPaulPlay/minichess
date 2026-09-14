@@ -4,14 +4,15 @@ import PlaySocket from "playsocketjs";
 import { pickBestMove } from "./bot.ts";
 
 export class BotWorker {
-	private socket = new PlaySocket(null, { endpoint: "ws://localhost:3000/socket" });
+	private socket: PlaySocket;
 	private isThinking = false;
 	public id: string = "";
 	public depth: number;
 	public onGameOver?: () => void;
 
-	constructor(depth = 3) {
+	constructor(depth = 3, elo = 800) {
 		this.depth = depth;
+		this.socket = new PlaySocket(null, { endpoint: "ws://localhost:3000/socket", customData: { elo } });
 		this.socket.onEvent("storageUpdated", (storage: RoomStorage) => {
 			if (!storage || storage.meta?.isQueue) return;
 			if (storage.status?.isGameOver) {

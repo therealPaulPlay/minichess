@@ -6,7 +6,7 @@ import { ChessGame, initialBoard } from "./gameLogic.ts";
 
 import type { IncomingMessage } from "node:http";
 import type { GameStatus, Move, RoomStorage } from "../engine/types.ts";
-import { addToQueue, removeFromQueue, removeRoomFromQueue, startMatchmaking } from "./matchmaking.ts";
+import { addToQueue, getPlayerFromId, removeFromQueue, removeRoomFromQueue, startMatchmaking } from "./matchmaking.ts";
 import { BotWorker } from "./botWorker.ts";
 
 const PORT = 3000;
@@ -29,6 +29,14 @@ const server = new PlaySocketServer({
 startMatchmaking(server);
 
 const chessGameInstances = new Map<string, ChessGame>(); // Room ID -> chess game instance
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+server.onEvent("clientRegistered", (clientId: string, customData: any) => {
+	// When client connects, add them to the queue with their customData ELO
+	if (customData?.elo) {
+		addToQueue({ id: clientId, roomId: "", elo: customData.elo });
+	}
+});
 
 server.onEvent("roomCreationRequested", ({ clientId, initialStorage }) => {
 	// If it's a queue room there is no need to assign white/black or initialBoard
@@ -54,14 +62,15 @@ server.onEvent("roomCreated", (roomId: string) => {
 	const roomStorage: RoomStorage | undefined = server.getRoomStorage(roomId);
 	if (!roomStorage) return;
 
+	// Player is entering a temp room for queue
 	if (roomStorage?.meta?.isQueue) {
 		const clientId = server.rooms[roomId]?.host || server.rooms[roomId]?.participants?.[0];
-		if (clientId)
-			addToQueue({
-				id: clientId,
-				roomId,
-				elo: roomStorage.meta?.elo || 1000,
-			});
+		if (clientId) {
+			const player = getPlayerFromId(clientId);
+			if (player) {
+				player.roomId = roomId; // attach the queue room so server.move works
+			}
+		}
 		return;
 	}
 
@@ -130,10 +139,10 @@ server.onEvent("storageUpdateRequested", ({ roomId, clientId, update, storage })
 });
 
 async function spawnQueueBot(depth: number, elo: number) {
-	const bot = new BotWorker(depth);
+	const bot = new BotWorker(depth, elo);
 	await bot.connect();
 	await bot.joinQueue(elo);
-	console.log(`[Bot] ${bot.id} is now waiting in the matchmaking queue!`);
+	console.log(`[Bot] ${bot.id}(${elo}) is now waiting in the matchmaking queue!`);
 	bot.onGameOver = () => {
 		console.log(`[Bot] Match ended. Re-queuing another bot in 3s...`);
 		bot.destroy();
@@ -143,7 +152,7 @@ async function spawnQueueBot(depth: number, elo: number) {
 // Start and clean exit -----------------------------------------------------------------
 httpServer.listen(PORT, "0.0.0.0", () => {
 	console.log(`Listening on port ${PORT}.`);
-	spawnQueueBot(5, 1500);
+	spawnQueueBot(3, 800);
 });
 
 function shutdown() {

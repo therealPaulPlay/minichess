@@ -47,8 +47,9 @@ export interface Meta {
 	roomId?: string;
 	whiteId?: string;
 	blackId?: string;
+	whiteElo?: number;
+	blackElo?: number;
 	initialBoard?: BoardGrid;
-	elo?: number;
 }
 
 export interface RoomStorage {
