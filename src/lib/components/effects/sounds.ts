@@ -3,6 +3,9 @@ import { browser } from "$app/environment";
 export const SOUNDS = {
 	move: "/sounds/piece-move.wav",
 	capture: "/sounds/piece-capture.wav",
+	startGame: "/sounds/start-game.wav",
+	endWin: "/sounds/end-win.wav",
+	endLose: "/sounds/end-lose.wav",
 } as const;
 
 export type SoundName = keyof typeof SOUNDS;

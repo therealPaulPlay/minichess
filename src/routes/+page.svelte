@@ -4,7 +4,6 @@
 	import PawnLogo from "$lib/components/chess-pieces/PawnLogo.svelte";
 	import { enterMatchmaking } from "$lib/stores/multiplayerStore.svelte";
 	import Spinner from "$lib/components/ui/spinner/spinner.svelte";
-	import { goto } from "$app/navigation";
 
 	let enteringLobby = $state(false);
 
@@ -52,15 +51,7 @@
 				</Button>
 				<PrivateMatchModal />
 			</div>
-			<Button
-				variant="ghost"
-				onclick={() => {
-					goto("/guide");
-				}}
-				class="opacity-50"
-			>
-				How to play
-			</Button>
+			<Button variant="ghost" href="/guide" class="opacity-50">How to play</Button>
 		</div>
 	</div>
 </main>

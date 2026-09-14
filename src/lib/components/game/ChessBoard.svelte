@@ -263,17 +263,17 @@
 </script>
 
 <div class="flex flex-col items-center justify-center gap-6" bind:this={boardRef}>
-	<div class="relative flex flex-col rounded-2xl bg-white">
+	<div class="relative flex flex-col rounded-2xl bg-zinc-50 p-2">
 		<div class="relative flex flex-row">
 			<div class="grid grid-cols-5">
 				{#if localBoard}
 					{#each rowIndices as rIndex}
 						{#each colIndices as cIndex}
-							{@const cell = localBoard[rIndex]?.[cIndex]}
-							{@const col = String.fromCharCode(97 + cIndex)}
-							{@const rowLabel = 5 - Math.floor(rIndex)}
-							{@const square = `${col}${rowLabel}`}
-							{@const highlighted = isHighlighted(rIndex, cIndex, validMoves)}
+							{const cell = $derived(localBoard[rIndex]?.[cIndex])}
+							{const col = $derived(String.fromCharCode(97 + cIndex))}
+							{const rowLabel = $derived(5 - Math.floor(rIndex))}
+							{const square = $derived(`${col}${rowLabel}`)}
+							{const highlighted = $derived(isHighlighted(rIndex, cIndex, validMoves))}
 							<Square
 								isDark={(cIndex + rIndex) % 2 == 0}
 								{square}

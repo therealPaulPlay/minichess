@@ -3,10 +3,12 @@
 	import Piece from "$lib/components/game/Piece.svelte";
 	import Button from "$lib/components/ui/button/button.svelte";
 	import * as Select from "$lib/components/ui/select/index.js";
-	import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight } from "@lucide/svelte";
+	import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download } from "@lucide/svelte";
 	import type { BoardGrid, Move, PieceColor } from "$lib/engine/types";
 	import { createBoardFromMoves } from "$lib/engine/helpers";
 	import { playSound } from "$lib/components/effects/sounds";
+	import { generateReplayGif } from "$lib/utils/gifGenerator";
+	import { Spinner } from "$lib/components/ui/spinner/index.js";
 
 	let {
 		moves = [],
@@ -21,6 +23,31 @@
 		winner?: PieceColor | "draw";
 		isFlipped?: boolean;
 	} = $props();
+
+	let isGeneratingGif = $state(false);
+
+	async function downloadGif() {
+		if (isGeneratingGif || moves.length === 0) return;
+		try {
+			isGeneratingGif = true;
+			const blob = await generateReplayGif(initialBoard, moves, {
+				isFlipped,
+				winner,
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `minichess-replay-${Date.now()}.gif`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			console.error("Failed to generate GIF:", err);
+		} finally {
+			isGeneratingGif = false;
+		}
+	}
 
 	let currentMoveIndex = $state(0);
 	let previousMovesLength: number | null = null;
@@ -106,13 +133,13 @@
 
 <div class="flex flex-col items-center justify-center gap-4">
 	<!-- Board -->
-	<div class="relative flex flex-col rounded-2xl bg-white p-4 shadow-xl">
+	<div class="relative flex flex-col items-center rounded-3xl bg-white shadow-xl sm:p-8">
 		<div class="grid grid-cols-5">
 			{#each rowIndices as r}
 				{#each colIndices as c}
-					{@const piece = currentBoard[r]?.[c]}
-					{@const isDark = (r + c) % 2 === 0}
-					{@const isHighlighted = isSquareLastMove(r, c)}
+					{const piece = $derived(currentBoard[r]?.[c])}
+					{const isDark = $derived((r + c) % 2 === 0)}
+					{const isHighlighted = $derived(isSquareLastMove(r, c))}
 
 					<Square {isDark} {isHighlighted} {cellSize} row={r} col={c} {piece} showSword={false}>
 						{#if piece}
@@ -120,7 +147,10 @@
 								type={piece.type}
 								color={piece.color}
 								draggable={false}
-								isDead={piece.color !== winner && piece.type === "k" && currentMoveIndex === moves.length}
+								isDead={winner !== "draw" &&
+									piece.color !== winner &&
+									piece.type === "k" &&
+									currentMoveIndex === moves.length}
 							/>
 						{/if}
 					</Square>
@@ -130,7 +160,7 @@
 	</div>
 
 	<!-- Replay control bar -->
-	<div class="flex w-full max-w-full items-center justify-between">
+	<div class="flex w-full max-w-full items-center justify-between gap-1">
 		<Button
 			variant="ghost"
 			size="icon"
@@ -201,5 +231,21 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+
+		<!-- Download GIF button -->
+		<Button
+			variant="ghost"
+			size="icon"
+			class="h-7 w-7 cursor-pointer"
+			disabled={isGeneratingGif || moves.length === 0}
+			onclick={downloadGif}
+			title="Download GIF"
+		>
+			{#if isGeneratingGif}
+				<Spinner class="size-3.5" />
+			{:else}
+				<Download class="size-3.5" />
+			{/if}
+		</Button>
 	</div>
 </div>

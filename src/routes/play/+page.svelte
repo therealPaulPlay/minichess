@@ -7,6 +7,7 @@
 	import { multiplayerState } from "$lib/stores/multiplayerStore.svelte";
 	import EndModal from "./EndModal.svelte";
 	import Replay from "./Replay.svelte";
+	import { playSound } from "$lib/components/effects/sounds";
 
 	const isGameOver = $derived(multiplayerState.storage.status?.isGameOver);
 	const userColor = $derived(
@@ -14,14 +15,24 @@
 	);
 
 	let isEndModalOpen = $state(true);
+	let endSoundPlayed = $state(false);
 
 	function quitGame() {
+		if (!isGameOver) playSound("endLose");
 		if (multiplayerState.socket?.id) multiplayerState.socket.destroy();
 		goto("/");
 	}
+
+	$effect(() => {
+		if (isGameOver && !endSoundPlayed) {
+			if (multiplayerState.storage.status?.winner === userColor) playSound("endWin");
+			else playSound("endLose");
+			endSoundPlayed = true;
+		}
+	});
 </script>
 
-<main class="relative flex min-h-screen w-full p-8 text-slate-900">
+<main class="relative flex min-h-screen w-full bg-zinc-100 p-8 text-slate-900">
 	{#if isGameOver}
 		<!-- Safe exit when game has ended (no forfeit confirmation) -->
 		<Button
@@ -60,13 +71,13 @@
 		</AlertDialog.Root>
 	{/if}
 
-	<div class="flex flex-1 scale-75 flex-col items-center justify-center gap-4 md:scale-100">
+	<div class="flex flex-1 scale-75 flex-col items-center justify-center gap-2 md:scale-100">
 		{#if isGameOver}
 			<Replay
 				moves={multiplayerState.storage?.moveHistory || []}
 				initialBoard={multiplayerState.storage?.meta?.initialBoard || []}
 				isFlipped={userColor === "black"}
-				winner={multiplayerState.storage?.status?.winner || "white"}
+				winner={multiplayerState.storage?.status?.winner ?? "draw"}
 				cellSize={60}
 			/>
 			<!-- Reopen End Modal button when reviewing board -->

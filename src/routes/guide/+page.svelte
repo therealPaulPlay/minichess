@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import Button from "$lib/components/ui/button/button.svelte";
 	import Square from "$lib/components/game/Square.svelte";
 	import Piece from "$lib/components/game/Piece.svelte";
@@ -58,14 +57,14 @@
 				variant="ghost"
 				size="sm"
 				class="-ml-3 w-fit cursor-pointer gap-2 text-zinc-500 hover:text-zinc-900"
-				onclick={() => goto("/")}
+				href="/"
 			>
 				<ArrowLeft size={16} />
 				<span>Back</span>
 			</Button>
 
 			<div class="flex flex-col gap-2">
-				<h1 class="text-4xl font-extralight tracking-tight text-zinc-900">Minichess Rules</h1>
+				<h1 class="text-4xl font-extralight tracking-tight text-zinc-900">Minichess rules</h1>
 				<p class="text-sm leading-relaxed text-zinc-600">
 					A 5×5 tactical chess variant created by Martin Gardner in 1962 and standardized by the AISE. All pieces move
 					identically to standard chess, condensed into an intense short-range battle where tactics begin on move one.
@@ -88,7 +87,7 @@
 					<div class="grid grid-cols-5 rounded-xl bg-white p-1.5 shadow-sm">
 						{#each startingBoard as row, rIndex}
 							{#each row as cell, cIndex}
-								{@const square = `${files[cIndex]}${5 - rIndex}`}
+								{const square = `${files[cIndex]}${5 - rIndex}`}
 								<Square
 									isDark={(cIndex + rIndex) % 2 === 0}
 									{square}
@@ -124,11 +123,11 @@
 
 		<!-- Rule Differences (Editorial Definition List) -->
 		<section class="flex flex-col gap-4">
-			<h2 class="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Key Differences</h2>
+			<h2 class="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Key differences</h2>
 
 			<div class="flex flex-col divide-y divide-zinc-200/80">
 				<div class="py-4 first:pt-0">
-					<h3 class="text-sm font-medium text-zinc-900">No Double Pawn Step</h3>
+					<h3 class="text-sm font-medium text-zinc-900">No double pawn step</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						Pawns can only advance one square at a time, including on their initial move. Captures remain strictly
 						diagonally forward.
@@ -136,21 +135,21 @@
 				</div>
 
 				<div class="py-4">
-					<h3 class="text-sm font-medium text-zinc-900">No En Passant</h3>
+					<h3 class="text-sm font-medium text-zinc-900">No en passant</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						Because pawns never leap two squares forward, en passant does not exist.
 					</p>
 				</div>
 
 				<div class="py-4">
-					<h3 class="text-sm font-medium text-zinc-900">No Castling</h3>
+					<h3 class="text-sm font-medium text-zinc-900">No castling</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						There is no castling. Rooks and Kings start on their home squares and move as normal pieces.
 					</p>
 				</div>
 
 				<div class="py-4 last:pb-0">
-					<h3 class="text-sm font-medium text-zinc-900">Immediate Promotion</h3>
+					<h3 class="text-sm font-medium text-zinc-900">Immediate promotion</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						Advancing a pawn to the opponent's back rank (rank 5 for White, rank 1 for Black) instantly promotes it into
 						a Queen.
@@ -168,7 +167,7 @@
 
 			<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 				<div>
-					<h3 class="text-sm font-medium text-zinc-900">Time Control</h3>
+					<h3 class="text-sm font-medium text-zinc-900">Time control</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						5 minutes per player. If your clock hits zero, your opponent wins on time.
 					</p>
@@ -189,7 +188,7 @@
 				</div>
 
 				<div>
-					<h3 class="text-sm font-medium text-zinc-900">Insufficient Material</h3>
+					<h3 class="text-sm font-medium text-zinc-900">Insufficient material</h3>
 					<p class="mt-1 text-sm leading-relaxed text-zinc-600">
 						King vs. King or King with a single minor piece vs. King results in an automatic draw.
 					</p>
@@ -238,11 +237,11 @@
 
 			<div class="flex flex-col gap-3 text-sm leading-relaxed text-zinc-600">
 				<p>
-					Minichess was originally conceived by Martin Gardner in 1962. However, this specific ruleset was codified in the
-					1980s by the <strong class="font-medium text-zinc-900">AISE</strong> (<em
+					Minichess was originally conceived by Martin Gardner in 1962. However, this specific ruleset was codified in
+					the 1980s by the <strong class="font-medium text-zinc-900">AISE</strong> (<em
 						>Associazione Italiana Scacchi Eterodossi</em
-					>), who removed castling and the pawn double-step to eliminate awkward king hops and premature turn-one clashes
-					on a 5-wide grid.
+					>), who removed castling and the pawn double-step to eliminate awkward king hops and premature turn-one
+					clashes on a 5-wide grid.
 				</p>
 				<p>
 					In 2013, computer scientists Mehdi Mhalla and Frédéric Prost mathematically <strong
@@ -256,7 +255,7 @@
 
 		<!-- Footer CTA -->
 		<footer class="mt-4 flex flex-col items-center gap-3 pb-16 text-center">
-			<Button size="lg" class="bg-dark cursor-pointer px-8 text-base text-white" onclick={() => goto("/")}>Play</Button>
+			<Button size="lg" class="bg-dark cursor-pointer px-8 text-base text-white" href="/">Play</Button>
 		</footer>
 	</div>
 </main>

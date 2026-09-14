@@ -41,7 +41,7 @@
 	}
 </script>
 
-<div class="flex min-h-screen w-full flex-col items-center justify-center">
+<div class="flex min-h-screen w-full flex-col items-center justify-center bg-zinc-100">
 	<div class="text-dark mb-12 flex flex-col items-center text-center">
 		<div class="mb-4 text-4xl font-bold">
 			{#if !isPrivate}
