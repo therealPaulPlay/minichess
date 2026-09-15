@@ -14,6 +14,7 @@
 	import PlaySocket from "playsocketjs";
 	import { goto } from "$app/navigation";
 	import type { RoomStorage } from "$lib/engine/types";
+	import { toast } from "svelte-sonner";
 
 	let joinCode = $state("");
 
@@ -39,8 +40,8 @@
 			creatingRoom = false;
 			goto("/lobby");
 		} catch (error) {
-			console.log(error);
-			alert(`Error creating room: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
+			console.error(error);
+			toast.error("Error creating room");
 			creatingRoom = false;
 		}
 	}
@@ -73,7 +74,8 @@
 
 			goto("/play");
 		} catch (error) {
-			console.log(error);
+			toast.error("Something went wrong while joining the room");
+			console.error(error);
 		}
 	}
 </script>

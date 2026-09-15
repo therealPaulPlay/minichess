@@ -3,7 +3,7 @@
 	import QueenIcon from "../chess-pieces/QueenIcon.svelte";
 </script>
 
-<div class="overflow-hidden px-6 py-8">
+<div class="feather-mask overflow-hidden px-8 py-8">
 	<div class="relative flex flex-row-reverse gap-4">
 		{#each [0, 1, 2] as i}
 			<div class="hop" style:--delay="{i * 0.2}s">
@@ -17,6 +17,10 @@
 </div>
 
 <style>
+	.feather-mask {
+		mask-image: linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%);
+	}
+
 	.hop {
 		animation: pawn-hop 1s infinite;
 		animation-delay: var(--delay, 0s);

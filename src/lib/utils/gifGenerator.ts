@@ -72,8 +72,9 @@ export async function generateReplayGif(
 	const canvas = document.createElement("canvas");
 	canvas.width = canvasWidth;
 	canvas.height = canvasHeight;
-	const ctx = canvas.getContext("2d", { willReadFrequently: true });
-	if (!ctx) throw new Error("Could not create 2D canvas context");
+	const rawCtx = canvas.getContext("2d", { willReadFrequently: true });
+	if (!rawCtx) throw new Error("Could not create 2D canvas context");
+	const ctx: CanvasRenderingContext2D = rawCtx;
 
 	// Cache Path2D objects
 	const pathCache: Record<string, Path2D[]> = {};
@@ -105,20 +106,81 @@ export async function generateReplayGif(
 
 	const gif = GIFEncoder();
 
-
 	const rowIndices = isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4];
 	const colIndices = isFlipped ? [4, 3, 2, 1, 0] : [0, 1, 2, 3, 4];
 
-	for (let moveStep = 0; moveStep <= moves.length; moveStep++) {
-		const currentBoard = createBoardFromMoves(initialBoard, moves.slice(0, moveStep));
-		const lastMove = moveStep > 0 ? moves[moveStep - 1] : null;
-		const isFinalMove = moveStep === moves.length;
+	// Cubic-bezier solver for (0.2, 0.7, 0.6, 0.75) easing
+	function solveCubicBezier(x1: number, y1: number, x2: number, y2: number) {
+		return function (t: number): number {
+			if (t <= 0) return 0;
+			if (t >= 1) return 1;
+			let u = t;
+			for (let i = 0; i < 6; i++) {
+				const currentX = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u;
+				const dx = 3 * (1 - u) * (1 - u) * x1 + 6 * (1 - u) * u * (x2 - x1) + 3 * u * u * (1 - x2);
+				if (Math.abs(dx) < 1e-6) break;
+				u -= (currentX - t) / dx;
+				u = Math.max(0, Math.min(1, u));
+			}
+			return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+		};
+	}
+	const easeSlam = solveCubicBezier(0.2, 0.7, 0.6, 0.75);
 
-		// 1. Clear background with generous empty space
-		ctx.fillStyle = "#f4f4f6"; // Matches og-image.jpg background
+	function getSquareCanvasCenter(r: number, c: number) {
+		const visualCol = isFlipped ? 4 - c : c;
+		const visualRow = isFlipped ? 4 - r : r;
+		return {
+			x: boardX + visualCol * squareSize + squareSize / 2,
+			y: boardY + visualRow * squareSize + squareSize / 2,
+		};
+	}
+
+	function recordFrame(delayMs: number) {
+		const { data, width, height } = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+		const palette = quantize(data, 256);
+		const index = applyPalette(data, palette);
+		gif.writeFrame(index, width, height, { palette, delay: delayMs });
+	}
+
+	function drawPiece(
+		piece: { type: string; color: string },
+		centerX: number,
+		centerY: number,
+		options: {
+			rotationRad?: number;
+			alpha?: number;
+		} = {},
+	) {
+		const { rotationRad = 0, alpha = 1 } = options;
+		ctx.save();
+		ctx.translate(centerX, centerY);
+		if (rotationRad !== 0) ctx.rotate(rotationRad);
+		if (alpha < 1) ctx.globalAlpha = alpha;
+
+		const scale = (squareSize * 0.72) / 44;
+		ctx.scale(scale, scale);
+		ctx.translate(-50, -50);
+
+		ctx.fillStyle = piece.color === "white" ? "#919191" : "#18181b";
+		const paths = pathCache[piece.type];
+		if (paths) {
+			for (const p of paths) ctx.fill(p);
+		}
+		if (piece.type === "q") {
+			ctx.beginPath();
+			ctx.arc(50, 36.36, 6.12, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	function renderBoardBase(highlightSquares: Array<{ row: number; col: number }>) {
+		// 1. Background
+		ctx.fillStyle = "#f4f4f6";
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-		// 2. White board card background (only covers the board)
+		// 2. White board card
 		ctx.fillStyle = "#ffffff";
 		if (ctx.roundRect) {
 			ctx.beginPath();
@@ -128,7 +190,7 @@ export async function generateReplayGif(
 			ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
 		}
 
-		// 3. Draw 5x5 Squircle Squares & Dot Highlights
+		// 3. Squares & Dots
 		for (let visualRow = 0; visualRow < 5; visualRow++) {
 			for (let visualCol = 0; visualCol < 5; visualCol++) {
 				const r = rowIndices[visualRow];
@@ -136,13 +198,8 @@ export async function generateReplayGif(
 
 				const sqX = boardX + visualCol * squareSize;
 				const sqY = boardY + visualRow * squareSize;
-
 				const isDark = (r + c) % 2 === 0;
-				const isLastMoveSquare =
-					lastMove &&
-					((lastMove.from.row === r && lastMove.from.col === c) || (lastMove.to.row === r && lastMove.to.col === c));
 
-				// Square squircle background
 				ctx.save();
 				ctx.translate(sqX, sqY);
 				ctx.scale(squareSize / 100, squareSize / 100);
@@ -150,115 +207,175 @@ export async function generateReplayGif(
 				ctx.fill(squirclePath);
 				ctx.restore();
 
-				const centerX = sqX + squareSize / 2;
-				const centerY = sqY + squareSize / 2;
-
-				// Dot highlight on last move squares
-				if (isLastMoveSquare) {
+				const isHighlighted = highlightSquares.some((sq) => sq.row === r && sq.col === c);
+				if (isHighlighted) {
+					const centerX = sqX + squareSize / 2;
+					const centerY = sqY + squareSize / 2;
 					ctx.beginPath();
 					ctx.arc(centerX, centerY, 4.5, 0, Math.PI * 2);
 					ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
 					ctx.fill();
 				}
-
-				// 4. Draw Piece (if any)
-				const piece = currentBoard[r]?.[c];
-				if (piece) {
-					const isDeadKing =
-						isFinalMove && piece.type === "k" && winner && winner !== "draw" && piece.color !== winner;
-
-					ctx.save();
-
-					ctx.translate(centerX, centerY);
-
-					if (isDeadKing) {
-						ctx.rotate((-25 * Math.PI) / 180);
-						ctx.globalAlpha = 0.75;
-					}
-
-					// Scale 44x44 icon to fit square nicely (scale ~1.15 for 73px square)
-					const scale = (squareSize * 0.72) / 44;
-					ctx.scale(scale, scale);
-					ctx.translate(-50, -50); // Piece center is at (50, 50)
-
-					ctx.fillStyle = piece.color === "white" ? "#919191" : "#18181b";
-
-					const paths = pathCache[piece.type];
-					if (paths) {
-						for (const p of paths) ctx.fill(p);
-					}
-
-					// Extra circle for Queen
-					if (piece.type === "q") {
-						ctx.beginPath();
-						ctx.arc(50, 36.36, 6.12, 0, Math.PI * 2);
-						ctx.fill();
-					}
-
-					ctx.restore();
-				}
 			}
 		}
 
-		// 5. Top Logo Banner (using the official logo banner image)
+		// 4. Logo Banner
 		if (bannerImg) {
-			const sx = 60;
-			const sy = 215;
-			const sw = 1080;
-			const sh = 185;
-
+			const sx = 60,
+				sy = 215,
+				sw = 1080,
+				sh = 185;
 			const targetHeight = 44;
 			const targetWidth = targetHeight * (sw / sh);
 			const logoX = (canvasWidth - targetWidth) / 2;
 			const logoY = (cardY - targetHeight) / 2;
-
 			ctx.drawImage(bannerImg, sx, sy, sw, sh, logoX, logoY, targetWidth, targetHeight);
 		}
 
-		// 6. Website text outside the white board card
-		const fontStr =
-			'500 13px "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-		ctx.font = fontStr;
+		// 5. Footer URL text
+		ctx.font = '500 13px "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 		ctx.textBaseline = "alphabetic";
 		ctx.textAlign = "left";
-
 		const prefixText = "Come compete at ";
 		const siteUrl = "minichess.co";
-
 		const prefixWidth = ctx.measureText(prefixText).width;
 		const siteUrlWidth = ctx.measureText(siteUrl).width;
 		const totalTextWidth = prefixWidth + siteUrlWidth;
-
 		const textStartX = (canvasWidth - totalTextWidth) / 2;
 		const textY = cardY + cardHeight + 68;
 
-		// Prefix: "Come compete at "
-		ctx.fillStyle = "#71717a"; // zinc-500
+		ctx.fillStyle = "#71717a";
 		ctx.fillText(prefixText, textStartX, textY);
-
-		// Link: "minichess.co" (underlined)
 		const linkX = textStartX + prefixWidth;
-		ctx.fillStyle = "#18181b"; // zinc-900
+		ctx.fillStyle = "#18181b";
 		ctx.fillText(siteUrl, linkX, textY);
-
-		// Draw underline under "minichess.co"
 		ctx.beginPath();
 		ctx.strokeStyle = "#18181b";
 		ctx.lineWidth = 1.2;
 		ctx.moveTo(linkX, textY + 3.5);
 		ctx.lineTo(linkX + siteUrlWidth, textY + 3.5);
 		ctx.stroke();
+	}
 
-		// 7. Quantize & write frame
+	function renderStaticPieces(
+		board: BoardGrid,
+		excludePos: { row: number; col: number } | null = null,
+		isGameOver = false,
+	) {
+		for (let visualRow = 0; visualRow < 5; visualRow++) {
+			for (let visualCol = 0; visualCol < 5; visualCol++) {
+				const r = rowIndices[visualRow];
+				const c = colIndices[visualCol];
+				if (excludePos && excludePos.row === r && excludePos.col === c) continue;
 
-		const { data, width, height } = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-		const palette = quantize(data, 256);
-		const index = applyPalette(data, palette);
+				const piece = board[r]?.[c];
+				if (!piece) continue;
 
+				const isDeadKing =
+					isGameOver && piece.type === "k" && winner && winner !== "draw" && piece.color !== winner;
 
+				const pos = getSquareCanvasCenter(r, c);
+				drawPiece(piece, pos.x, pos.y, {
+					rotationRad: isDeadKing ? (-25 * Math.PI) / 180 : 0,
+					alpha: isDeadKing ? 0.75 : 1,
+				});
+			}
+		}
+	}
 
-		const delay = isFinalMove ? finalDelayMs : stepDelayMs;
-		gif.writeFrame(index, width, height, { palette, delay });
+	// If no moves, render initial board for finalDelayMs
+	if (moves.length === 0) {
+		renderBoardBase([]);
+		renderStaticPieces(initialBoard, null, true);
+		recordFrame(finalDelayMs);
+		gif.finish();
+		const bytes = gif.bytes();
+		return new Blob([bytes as unknown as BlobPart], { type: "image/gif" });
+	}
+
+	// 1. Initial Opening Board Position (500ms pause)
+	renderBoardBase([]);
+	renderStaticPieces(initialBoard, null, false);
+	recordFrame(500);
+
+	// 2. Play through moves
+	for (let m = 0; m < moves.length; m++) {
+		const move = moves[m];
+		const isLastMoveOfGame = m === moves.length - 1;
+		const boardBefore = createBoardFromMoves(initialBoard, moves.slice(0, m));
+		const boardAfter = createBoardFromMoves(initialBoard, moves.slice(0, m + 1));
+		const movingPiece = boardBefore[move.from.row]?.[move.from.col];
+		const targetPiece = boardBefore[move.to.row]?.[move.to.col];
+
+		if (!movingPiece) {
+			renderBoardBase([move.from, move.to]);
+			renderStaticPieces(boardAfter, null, isLastMoveOfGame);
+			recordFrame(isLastMoveOfGame ? finalDelayMs : stepDelayMs);
+			continue;
+		}
+
+		const fromPos = getSquareCanvasCenter(move.from.row, move.from.col);
+		const toPos = getSquareCanvasCenter(move.to.row, move.to.col);
+
+		const dx = toPos.x - fromPos.x;
+		const dy = toPos.y - fromPos.y;
+		const dist = Math.hypot(dx, dy);
+		const nx = dist > 0 ? -dy / dist : 0;
+		const ny = dist > 0 ? dx / dist : 0;
+		const mx = (fromPos.x + toPos.x) / 2;
+		const my = (fromPos.y + toPos.y) / 2;
+		const h = Math.min(50, Math.max(22, dist * 0.22));
+
+		const boardCenterX = boardX + 2.5 * squareSize;
+		const boardCenterY = boardY + 2.5 * squareSize;
+		const dot = nx * (boardCenterX - mx) + ny * (boardCenterY - my);
+		const sign = Math.abs(dot) > 10 ? (dot > 0 ? 1 : -1) : 1;
+
+		const pcX = mx + nx * h * sign;
+		const pcY = my + ny * h * sign;
+
+		// 9 Flight Transit Frames (30ms each = 270ms flight at ~33.3 FPS)
+		const flightSteps = 9;
+		for (let step = 1; step <= flightSteps; step++) {
+			const t = step / (flightSteps + 1);
+			const e = easeSlam(t);
+
+			const oneMinusE = 1 - e;
+			const curX = oneMinusE * oneMinusE * fromPos.x + 2 * oneMinusE * e * pcX + e * e * toPos.x;
+			const curY = oneMinusE * oneMinusE * fromPos.y + 2 * oneMinusE * e * pcY + e * e * toPos.y;
+			const rot = sign * ((5 * Math.PI) / 180) * Math.sin(Math.PI * e);
+
+			renderBoardBase([move.from, move.to]);
+			renderStaticPieces(boardBefore, move.from, false);
+			drawPiece(movingPiece, curX, curY, { rotationRad: rot });
+			recordFrame(30);
+		}
+
+		// If a piece was captured, draw 3 ascending soul frames (30ms each = 90ms at ~33.3 FPS)
+		if (targetPiece) {
+			// Soul frame 1
+			renderBoardBase([move.from, move.to]);
+			renderStaticPieces(boardAfter, null, false);
+			drawPiece(targetPiece, toPos.x, toPos.y - 10, { rotationRad: -0.04, alpha: 0.65 });
+			recordFrame(30);
+
+			// Soul frame 2
+			renderBoardBase([move.from, move.to]);
+			renderStaticPieces(boardAfter, null, false);
+			drawPiece(targetPiece, toPos.x, toPos.y - 19, { rotationRad: -0.08, alpha: 0.35 });
+			recordFrame(30);
+
+			// Soul frame 3
+			renderBoardBase([move.from, move.to]);
+			renderStaticPieces(boardAfter, null, false);
+			drawPiece(targetPiece, toPos.x, toPos.y - 28, { rotationRad: -0.12, alpha: 0.12 });
+			recordFrame(30);
+		}
+
+		// Final landed state for this move (pause frame)
+		renderBoardBase([move.from, move.to]);
+		renderStaticPieces(boardAfter, null, isLastMoveOfGame);
+		recordFrame(isLastMoveOfGame ? finalDelayMs : stepDelayMs);
 	}
 
 	gif.finish();
